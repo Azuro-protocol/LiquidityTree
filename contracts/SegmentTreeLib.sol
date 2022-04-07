@@ -4,39 +4,67 @@ pragma solidity 0.8.3;
 
 contract SegmentTree {
     uint40 constant decimals = 10**12;
-    uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes, top at node #1
+    uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
 
-    uint48 public nextNode; // next node number for adding liquidity
+    uint48 public nextNode; // next unused node number for adding liquidity
 
     struct Node {
-        uint64 timestamp;
-        uint128 amount;
+        uint64 timestamp; // last update time
+        uint128 amount;   // node amount 
     }
 
+    // segment tree
     mapping(uint48 => Node) public treeNode;
 
+    /**
+     * @dev initializing LIQUIDITYNODES and nextNode. 
+     * @dev LIQUIDITYNODES is count of segment tree leaves contains single liquidity addings
+     * @dev segment tree build as array of 2*LIQUIDITYNODES count, top node has id #1 (id #0 not used)
+     * @dev segment tree leaves is array [LIQUIDITYNODES, 2*LIQUIDITYNODES-1]
+     * @dev segment tree node index N has left child index 2*N and right child index 2N+1
+     * @dev +--------------------------------------------+
+            |                  1 (top node)              |
+            +------------------------+-------------------+
+            |             2          |         3         |
+            +-------------+----------+---------+---------+
+            | 4 (nextNode)|     5    |    6    |    7    |
+            +-------------+----------+---------+---------+
+     * @param liquidityNodes count of leaves - possible single liquidity addings
+     */
     constructor(uint48 liquidityNodes) {
         LIQUIDITYNODES = liquidityNodes;
         nextNode = liquidityNodes;
     }
 
-    function nodeAddLiquidity(uint128 _amount) public {
-        updateUp(nextNode, _amount, false);
+    /**
+     * @dev add liquidity amount from the leaf up to top node
+     * @param amount - adding amount
+     */
+    function nodeAddLiquidity(uint128 amount) public {
+        updateUp(nextNode, amount, false);
         nextNode++;
     }
 
+    /**
+     * @dev withdraw all liquidity from the leaf, due possible many changes in leafe's parent nodes
+     * @dev it is needed firstly to update its amount and then withdraw
+     * @dev used steps:
+     * @dev 1 - get last updated parent most near to the leaf
+     * @dev 2 - push all changes from found parent doen to the leaf - that updates leaf's amount
+     * @dev 3 - execute withdraw of leaf amount and update amount changing up to top parents
+     */
     function nodeWithdrawLiquidity(uint48 leaf) public {
         require(treeNode[leaf].timestamp != 0, "Leaf not exist");
         // get last-updated top node
         (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
             1,
+            treeNode[1].timestamp,
             LIQUIDITYNODES,
             LIQUIDITYNODES * 2 - 1,
             1,
             LIQUIDITYNODES,
             LIQUIDITYNODES * 2 - 1,
-            leaf,
-            treeNode[1].timestamp
+            leaf
         );
         // push changes from last-updated node down to the leaf, if leaf is not up to date
         push(updatedNode, begin, end, leaf);
@@ -45,20 +73,31 @@ contract SegmentTree {
     }
 
     /**
-     * @dev get nearest to leaf (lowest) last-updated node from the parents, runs down from top 1 to leaf
-
+     * @dev top node is ever most updated, trying to find lower node not older then top node
+     * @dev get nearest to leaf (lowest) last-updated node from the parents, runing down from top to leaf
+     * @param parent top node
+     * @param parentTimestamp top node timestamp
+     * @param parentBegin top node most left leaf
+     * @param parentEnd top node most right leaf
+     * @param node node parent for the leaf
+     * @param begin node most left leaf
+     * @param end node most right leaf
+     * @param leaf target leaf
+     * @return resParent found most updated leaf parent
+     * @return resBegin found parent most left leaf
+     * @return resEnd found parent most right leaf
      */
     function getUpdatedNode(
         uint48 parent,
+        uint64 parentTimestamp,
         uint48 parentBegin,
         uint48 parentEnd,
         uint48 node,
         uint48 begin,
         uint48 end,
-        uint48 leaf,
-        uint64 timestamp
+        uint48 leaf
     )
-        public
+        internal
         view
         returns (
             uint48 resParent,
@@ -66,8 +105,8 @@ contract SegmentTree {
             uint48 resEnd
         )
     {
-        // if node is older than it's parent or node is leaf, stop and return parent
-        if (treeNode[node].timestamp < timestamp) {
+        // if node is older than it's parent, stop and return parent
+        if (treeNode[node].timestamp < parentTimestamp) {
             return (parent, parentBegin, parentEnd);
         }
         if (node == leaf) {
@@ -80,25 +119,25 @@ contract SegmentTree {
             // work on left child
             (resParent, resBegin, resEnd) = getUpdatedNode(
                 node,
+                parentTimestamp,
                 begin,
                 end,
                 node * 2,
                 begin,
                 mid,
-                leaf,
-                timestamp
+                leaf
             );
         } else {
             // work on right child
             (resParent, resBegin, resEnd) = getUpdatedNode(
                 node,
+                parentTimestamp,
                 begin,
                 end,
                 node * 2 + 1,
                 mid + 1,
                 end,
-                leaf,
-                timestamp
+                leaf
             );
         }
     }
@@ -262,6 +301,12 @@ contract SegmentTree {
         changeAmount(node, amount, isSub);
     }
 
+    /**
+     * @dev change amount by adding value or reducing value
+     * @param node - node for changing
+     * @param amount - amount value for changing
+     * @param isSub - true - reduce by amount, true - add by amount
+     */
     function changeAmount(
         uint48 node,
         uint128 amount,
