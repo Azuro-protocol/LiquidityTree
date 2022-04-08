@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.3;
 
+//import "hardhat/console.sol";
 contract SegmentTree {
     uint40 constant decimals = 10**12;
     uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
@@ -10,11 +11,13 @@ contract SegmentTree {
 
     struct Node {
         uint64 timestamp; // last update time
-        uint128 amount;   // node amount 
+        uint128 amount; // node amount
     }
 
     // segment tree
     mapping(uint48 => Node) public treeNode;
+
+    event withdrawn(address wallet, uint128 amount);
 
     /**
      * @dev initializing LIQUIDITYNODES and nextNode. 
@@ -68,8 +71,12 @@ contract SegmentTree {
         );
         // push changes from last-updated node down to the leaf, if leaf is not up to date
         push(updatedNode, begin, end, leaf);
+
         // remove amount from leaf to it's parents
-        updateUp(leaf, treeNode[leaf].amount, true);
+        uint128 withdrawAmount = treeNode[leaf].amount;
+        updateUp(leaf, withdrawAmount, true);
+
+        emit withdrawn(msg.sender, withdrawAmount);
     }
 
     /**
@@ -177,6 +184,22 @@ contract SegmentTree {
     }
 
     /**
+     * @dev add amount only for limited leaves in tree [first_lead, leaf]
+     * @param amount value to add
+     */
+    function addLimit(uint128 amount, uint48 leaf) public {
+        pushLazy(
+            1,
+            LIQUIDITYNODES,
+            LIQUIDITYNODES * 2 - 1,
+            LIQUIDITYNODES,
+            leaf,
+            amount,
+            false
+        );
+    }
+
+    /**
      * @dev remove amount from whole tree, starting from top node #1
      * @param amount value to remove
      */
@@ -270,7 +293,19 @@ contract SegmentTree {
                 pushLazy(node * 2, begin, mid, l, r, amount, isSub);
             } else {
                 uint128 lAmount = treeNode[node * 2].amount;
-                uint128 rAmount = treeNode[node * 2 + 1].amount;
+                // get right amount excluding unused leaves when adding amounts
+                uint128 rAmount = treeNode[node * 2 + 1].amount -
+                    (
+                        !isSub
+                            ? getLeavesAmount(
+                                node * 2 + 1,
+                                mid + 1,
+                                end,
+                                r + 1,
+                                end
+                            )
+                            : 0
+                    );
                 uint128 sumAmounts = lAmount + rAmount;
 
                 // l in [begin,mid] - part in left child
@@ -333,8 +368,7 @@ contract SegmentTree {
     }
 
     /**
-     * @dev parent N has left child 2N and right child 2N+1
-     *      odd number is left child node
+     * @dev parent N has left child 2N and right child 2N+1getLeavesAmount
      * @param fromNumber - get parent from some child
      * @return parentNumber - found parent
      */
@@ -348,5 +382,48 @@ contract SegmentTree {
             return 1;
         }
         return (fromNumber % 2 == 0 ? fromNumber : fromNumber - 1) / 2;
+    }
+
+    /**
+     * @dev for current node get sum amount of exact leaves list
+     * @param node node to get sum amount
+     * @param begin - node left element
+     * @param end - node right element
+     * @param l - left leaf of the list
+     * @param r - right leaf of the list
+     * @return amount sum of leaves list
+     */
+    function getLeavesAmount(
+        uint48 node,
+        uint48 begin,
+        uint48 end,
+        uint48 l,
+        uint48 r
+    ) public view returns (uint128 amount) {
+        if ((begin == l && end == r) || (begin == end)) {
+            // if node leafs equal to leaf interval then stop and return amount value
+            return (treeNode[node].amount);
+        }
+
+        uint48 mid = (begin + end) / 2;
+
+        if (begin <= l && l <= mid) {
+            if (begin <= r && r <= mid) {
+                amount += getLeavesAmount(node * 2, begin, mid, l, r);
+            } else {
+                amount += getLeavesAmount(node * 2, begin, mid, l, mid);
+                amount += getLeavesAmount(
+                    node * 2 + 1,
+                    mid + 1,
+                    end,
+                    mid + 1,
+                    r
+                );
+            }
+        } else {
+            amount += getLeavesAmount(node * 2 + 1, mid + 1, end, l, r);
+        }
+
+        return amount;
     }
 }

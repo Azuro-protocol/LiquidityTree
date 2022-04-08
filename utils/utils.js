@@ -28,11 +28,32 @@ async function getBlockTime(ethers) {
   return time;
 }
 
+const getNodeAmount = async (sTree, node) => {
+  return (await sTree.treeNode(node)).amount;
+};
+
+const prepareTree = async (ethers, leafs) => {
+  const SEGMENTTREE = await ethers.getContractFactory("SegmentTree");
+  let tree = await SEGMENTTREE.deploy(leafs);
+  await tree.deployed();
+  return tree;
+};
+
+const getWithdrawnAmount = async (txWithdrawn) => {
+  let eWithdrawn = (await txWithdrawn.wait()).events.filter((x) => {
+    return x.event == "withdrawn";
+  });
+  return eWithdrawn[0].args[1];
+};
+
 module.exports = {
   timeout,
   tokens,
   tokensDec,
   timeShift,
   getGas,
-  getBlockTime
+  getBlockTime,
+  getNodeAmount,
+  prepareTree,
+  getWithdrawnAmount
 };
