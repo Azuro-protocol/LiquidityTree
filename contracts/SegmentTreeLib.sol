@@ -307,17 +307,12 @@ contract SegmentTree {
                             : 0
                     );
                 uint128 sumAmounts = lAmount + rAmount;
+                uint128 forLeftAmount = (amount *
+                    ((lAmount * decimals) / sumAmounts)) / decimals;
 
                 // l in [begin,mid] - part in left child
-                pushLazy(
-                    node * 2,
-                    begin,
-                    mid,
-                    l,
-                    mid,
-                    (amount * ((lAmount * decimals) / sumAmounts)) / decimals,
-                    isSub
-                );
+                pushLazy(node * 2, begin, mid, l, mid, forLeftAmount, isSub);
+
                 // r in [mid+1,end] - part in right child
                 pushLazy(
                     node * 2 + 1,
@@ -325,7 +320,7 @@ contract SegmentTree {
                     end,
                     mid + 1,
                     r,
-                    (amount * ((rAmount * decimals) / sumAmounts)) / decimals,
+                    amount - forLeftAmount,
                     isSub
                 );
             }

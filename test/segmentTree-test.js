@@ -22,10 +22,10 @@ describe("SegmentTree", () => {
       await sTree.remove(TOKENS_100);
       await sTree.add(TOKENS_100);
       await sTree.remove(TOKENS_100);
-      await sTree.addLimit(tokens(100), (await sTree.nextNode())-3);
-      let tx = await sTree.nodeWithdrawLiquidity((await sTree.nextNode())-2);
+      await sTree.addLimit(tokens(100), (await sTree.nextNode()) - 3);
+      let tx = await sTree.nodeWithdrawLiquidity((await sTree.nextNode()) - 2);
       console.log(await getWithdrawnAmount(tx));
-      let tx2 = await sTree.nodeWithdrawLiquidity((await sTree.nextNode())-3);
+      let tx2 = await sTree.nodeWithdrawLiquidity((await sTree.nextNode()) - 3);
       console.log(await getWithdrawnAmount(tx2));
     });
   });
@@ -87,8 +87,8 @@ describe("SegmentTree", () => {
       */
 
       expect((await sTree.treeNode(4)).amount).to.be.equal("457142857142800000000");
-      expect((await sTree.treeNode(10)).amount).to.be.equal("228571428571371428571");
-      expect((await sTree.treeNode(22)).amount).to.be.equal("114285714285685714285");
+      expect((await sTree.treeNode(10)).amount).to.be.equal("228571428571438095238");
+      expect((await sTree.treeNode(22)).amount).to.be.equal("114285714285761904762");
 
       await sTree.nodeWithdrawLiquidity(16);
 
@@ -169,7 +169,7 @@ describe("SegmentTree", () => {
         console.log(i, (await sTree.treeNode(i)).amount.toString());
       } */
       expect((await sTree.treeNode(4)).amount).to.be.equal("466666666666600000000");
-      expect((await sTree.treeNode(10)).amount).to.be.equal("233333333333300000000");
+      expect((await sTree.treeNode(10)).amount).to.be.equal("233333333333400000000");
       expect((await sTree.treeNode(22)).amount).to.be.equal("0");
     });
     it("add liquidity to 7 leafs, top remove 100, withdraw leaf #1 add by 7 leaves", async () => {
@@ -230,14 +230,14 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(600));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(600));
       expect(await getNodeAmount(sTree, 4)).to.be.equal("342857142857200000000");
-      expect(await getNodeAmount(sTree, 5)).to.be.equal("257142857142900000000");
+      expect(await getNodeAmount(sTree, 5)).to.be.equal("257142857142800000000");
       expect(await getNodeAmount(sTree, 8)).to.be.equal(tokens(200));
       expect(await getNodeAmount(sTree, 9)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 10)).to.be.equal("171428571428628571429");
-      expect(await getNodeAmount(sTree, 11)).to.be.equal("85714285714314285715");
+      expect(await getNodeAmount(sTree, 10)).to.be.equal("171428571428561904762");
+      expect(await getNodeAmount(sTree, 11)).to.be.equal("85714285714238095238");
 
       let tx = await sTree.nodeWithdrawLiquidity(16);
-      
+
       /*
         Segment tree structure after nodeWithdrawLiquidity(16):
         +---------------------------------------------------------------------------------------------------------------------+
@@ -257,7 +257,6 @@ describe("SegmentTree", () => {
       */
 
       expect(await getWithdrawnAmount(tx)).to.be.equal("85714285714300000000");
-
 
       // add liquidity
       await sTree.nodeAddLiquidity(TOKENS_100);
@@ -283,11 +282,11 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 1)).to.be.equal("614285714285700000000");
       expect(await getNodeAmount(sTree, 2)).to.be.equal("614285714285700000000");
       expect(await getNodeAmount(sTree, 4)).to.be.equal("257142857142900000000");
-      expect(await getNodeAmount(sTree, 5)).to.be.equal("357142857142900000000");
+      expect(await getNodeAmount(sTree, 5)).to.be.equal("357142857142800000000");
       expect(await getNodeAmount(sTree, 8)).to.be.equal("85714285714300000000");
       expect(await getNodeAmount(sTree, 9)).to.be.equal("171428571428600000000");
-      expect(await getNodeAmount(sTree, 10)).to.be.equal("171428571428628571429");
-      expect(await getNodeAmount(sTree, 11)).to.be.equal("185714285714314285715");
+      expect(await getNodeAmount(sTree, 10)).to.be.equal("171428571428561904762");
+      expect(await getNodeAmount(sTree, 11)).to.be.equal("185714285714238095238");
       expect(await getNodeAmount(sTree, 23)).to.be.equal(tokens(100));
 
       //addLimit only for leaves [16-22], 23 not included
@@ -317,19 +316,30 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 1)).to.be.equal("714285714285700000000");
       expect(await getNodeAmount(sTree, 2)).to.be.equal("714285714285700000000");
       expect(await getNodeAmount(sTree, 4)).to.be.equal("307142857142900000000");
-      expect(await getNodeAmount(sTree, 5)).to.be.equal("407142857142900000000");
+      expect(await getNodeAmount(sTree, 5)).to.be.equal("407142857142800000000");
       expect(await getNodeAmount(sTree, 8)).to.be.equal("85714285714300000000");
       expect(await getNodeAmount(sTree, 9)).to.be.equal("171428571428600000000");
-      expect(await getNodeAmount(sTree, 10)).to.be.equal("204761904761928571429");
-      expect(await getNodeAmount(sTree, 11)).to.be.equal("202380952380964285715");
-      expect(await getNodeAmount(sTree, 22)).to.be.equal("102380952380964285715");
+      expect(await getNodeAmount(sTree, 10)).to.be.equal("204761904761861904762");
+      expect(await getNodeAmount(sTree, 11)).to.be.equal("202380952380938095238");
+      expect(await getNodeAmount(sTree, 22)).to.be.equal("102380952380938095238");
       expect(await getNodeAmount(sTree, 23)).to.be.equal(tokens(100));
+
+      // checksum correctness node = left child + right child
+      expect((await getNodeAmount(sTree, 4)).add(await getNodeAmount(sTree, 5))).to.be.equal(
+        await getNodeAmount(sTree, 2)
+      );
+      expect((await getNodeAmount(sTree, 10)).add(await getNodeAmount(sTree, 11))).to.be.equal(
+        await getNodeAmount(sTree, 5)
+      );
+      expect((await getNodeAmount(sTree, 23)).add(await getNodeAmount(sTree, 22))).to.be.equal(
+        await getNodeAmount(sTree, 11)
+      );
 
       //await sTree.addLimit(tokens(100), 23);
 
       /* for (const i of Array(SMALL_TREE_LEAFS * 2).keys()) {
         console.log(i, (await sTree.treeNode(i)).amount.toString());
       } */
-    })
+    });
   });
 });
