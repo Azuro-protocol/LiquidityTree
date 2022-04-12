@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.3;
 
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
 
 contract SegmentTree {
     uint40 constant decimals = 10**12;
@@ -238,19 +238,14 @@ contract SegmentTree {
         uint48 lChild = node * 2;
         uint48 rChild = node * 2 + 1;
         uint128 amount = treeNode[node].amount;
-        uint128 lAmount = treeNode[lChild].amount;
-        uint128 rAmount = treeNode[rChild].amount;
-        uint128 sumAmounts = lAmount + rAmount;
+        uint256 lAmount = treeNode[lChild].amount;
+        uint256 rAmount = treeNode[rChild].amount;
+        uint256 sumAmounts = lAmount + rAmount;
+        uint128 setLAmount = uint128((amount * lAmount) / sumAmounts);
 
         // update left and right child
-        setAmount(
-            lChild,
-            (amount * ((lAmount * decimals) / sumAmounts)) / decimals
-        );
-        setAmount(
-            rChild,
-            (amount * ((rAmount * decimals) / sumAmounts)) / decimals
-        );
+        setAmount(lChild, setLAmount);
+        setAmount(rChild, amount - setLAmount);
 
         uint48 mid = (begin + end) / 2;
 
@@ -310,13 +305,6 @@ contract SegmentTree {
                 uint128 sumAmounts = lAmount + rAmount;
                 uint128 forLeftAmount = (amount *
                     ((lAmount * decimals) / sumAmounts)) / decimals;
-
-                /* console.log("for left %s", node * 2, forLeftAmount);
-                console.log(
-                    "for right %s",
-                    node * 2 + 1,
-                    amount - forLeftAmount
-                ); */
 
                 // l in [begin,mid] - part in left child
                 pushLazy(node * 2, begin, mid, l, mid, forLeftAmount, isSub);

@@ -3,6 +3,7 @@ const { ethers } = require("hardhat");
 const { tokens, getNodeAmount, prepareTree, getWithdrawnAmount } = require("../utils/utils");
 
 const TOKENS_300 = tokens(300);
+const TOKENS_202 = tokens(202);
 const TOKENS_200 = tokens(200);
 const TOKENS_100 = tokens(100);
 const TOKENS_290 = tokens(290);
@@ -13,32 +14,32 @@ const EXAMPLE_TREE_LEAFS = 4;
 
 describe("SegmentTree", () => {
   let sTree;
-  describe.skip("Big tree", async () => {
+  describe("Big tree", async () => {
     beforeEach(async () => {
       sTree = await prepareTree(ethers, BIG_TREE_LEAFS);
     });
     it("res", async () => {
-      console.log("before add nextNode", (await sTree.nextNode()).toString());
+      //console.log("before add nextNode", (await sTree.nextNode()).toString());
       //console.log((await sTree.nextNode())-2);
       for (const iterator of Array(300).keys()) {
         await sTree.nodeAddLiquidity(TOKENS_100);
       }
-      console.log("after  add nextNode", (await sTree.nextNode()).toString());
+      //console.log("after  add nextNode", (await sTree.nextNode()).toString());
       await sTree.remove(TOKENS_100);
       await sTree.add(TOKENS_100);
       await sTree.remove(TOKENS_100);
       await sTree.addLimit(tokens(100), (await sTree.nextNode()) - 3);
       let tx = await sTree.nodeWithdrawLiquidity((await sTree.nextNode()) - 2);
-      console.log(await getWithdrawnAmount(tx));
+      //console.log(await getWithdrawnAmount(tx));
       let tx2 = await sTree.nodeWithdrawLiquidity((await sTree.nextNode()) - 3);
-      console.log(await getWithdrawnAmount(tx2));
+      //console.log(await getWithdrawnAmount(tx2));
     });
-  });  
-  describe.skip("small tree (16 leaves)", (async) => {
+  });
+  describe("small tree (16 leaves)", (async) => {
     beforeEach(async () => {
       sTree = await prepareTree(ethers, SMALL_TREE_LEAFS);
     });
-    it.skip("add liquidity to 7 leafs, top add 100, withdraw leaf", async () => {
+    it("add liquidity to 7 leafs, top add 100, withdraw leaf", async () => {
       for (const i of Array(7).keys()) {
         await sTree.nodeAddLiquidity(TOKENS_100);
       }
@@ -121,7 +122,7 @@ describe("SegmentTree", () => {
       expect((await sTree.treeNode(9)).amount).to.be.equal("228571428571400000000");
       expect((await sTree.treeNode(16)).amount).to.be.equal("0");
     });
-    it.skip("add liquidity to 6 leafs, top add 100", async () => {
+    it("add liquidity to 6 leafs, top add 100", async () => {
       for (const i of Array(6).keys()) {
         await sTree.nodeAddLiquidity(TOKENS_100);
       }
@@ -177,7 +178,7 @@ describe("SegmentTree", () => {
       expect((await sTree.treeNode(10)).amount).to.be.equal("233333333333400000000");
       expect((await sTree.treeNode(22)).amount).to.be.equal("0");
     });
-    it.skip("add liquidity to 7 leafs, top remove 100, withdraw leaf #1 add for 7 leaves", async () => {
+    it("add liquidity to 7 leafs, top remove 100, withdraw leaf #1 add for 7 leaves", async () => {
       for (const i of Array(7).keys()) {
         await sTree.nodeAddLiquidity(TOKENS_100);
       }
@@ -510,12 +511,12 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
     });
-    it("remove(10$) and addliquidity", async () => { 
+    it("remove(10$) and addliquidity", async () => {
       await sTree.remove(TOKENS_10);
       expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_290);
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_290);
       expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);      
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
 
       await sTree.nodeAddLiquidity(TOKENS_300);
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(590));
@@ -533,27 +534,26 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
-    })
+    });
     it("nodeWithdrawLiquidity(4)", async () => {
       let tx4 = await sTree.nodeWithdrawLiquidity(4);
-      expect(await getNodeAmount(sTree, 1)).to.be.equal("502000000000101000000"); //~502
-      expect(await getNodeAmount(sTree, 2)).to.be.equal("202000000000101000000"); //~202
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(502));
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_202);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
       expect(await getNodeAmount(sTree, 4)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 5)).to.be.equal("201999999999798000000"); //~202
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_202);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
-      expect(await getWithdrawnAmount(tx4)).to.be.equal("100999999999899000000"); //~101
-    })
+      expect(await getWithdrawnAmount(tx4)).to.be.equal(tokens(101));
+    });
     it("nodeWithdrawLiquidity(5)", async () => {
       let tx5 = await sTree.nodeWithdrawLiquidity(5);
-      console.log(await getWithdrawnAmount(tx5));
-      expect(await getNodeAmount(sTree, 1)).to.be.equal("300000000000303000000"); //~300
-      expect(await getNodeAmount(sTree, 2)).to.be.equal(            "303000000"); //~0
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_300);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
       expect(await getNodeAmount(sTree, 4)).to.be.equal(0);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(0);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
-      expect(await getWithdrawnAmount(tx5)).to.be.equal("201999999999798000000"); //~101
-    })
+      expect(await getWithdrawnAmount(tx5)).to.be.equal(TOKENS_202);
+    });
   });
 });
