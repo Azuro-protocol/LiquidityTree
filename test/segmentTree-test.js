@@ -2,9 +2,14 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { tokens, getNodeAmount, prepareTree, getWithdrawnAmount } = require("../utils/utils");
 
+const TOKENS_300 = tokens(300);
+const TOKENS_200 = tokens(200);
 const TOKENS_100 = tokens(100);
+const TOKENS_290 = tokens(290);
+const TOKENS_10 = tokens(10);
 const BIG_TREE_LEAFS = 1_099_511_627_776;
 const SMALL_TREE_LEAFS = 16;
+const EXAMPLE_TREE_LEAFS = 4;
 
 describe("SegmentTree", () => {
   let sTree;
@@ -28,12 +33,12 @@ describe("SegmentTree", () => {
       let tx2 = await sTree.nodeWithdrawLiquidity((await sTree.nextNode()) - 3);
       console.log(await getWithdrawnAmount(tx2));
     });
-  });
-  describe("small tree (16 leaves)", (async) => {
+  });  
+  describe.skip("small tree (16 leaves)", (async) => {
     beforeEach(async () => {
       sTree = await prepareTree(ethers, SMALL_TREE_LEAFS);
     });
-    it("add liquidity to 7 leafs, top add 100, withdraw leaf", async () => {
+    it.skip("add liquidity to 7 leafs, top add 100, withdraw leaf", async () => {
       for (const i of Array(7).keys()) {
         await sTree.nodeAddLiquidity(TOKENS_100);
       }
@@ -116,7 +121,7 @@ describe("SegmentTree", () => {
       expect((await sTree.treeNode(9)).amount).to.be.equal("228571428571400000000");
       expect((await sTree.treeNode(16)).amount).to.be.equal("0");
     });
-    it("add liquidity to 6 leafs, top add 100", async () => {
+    it.skip("add liquidity to 6 leafs, top add 100", async () => {
       for (const i of Array(6).keys()) {
         await sTree.nodeAddLiquidity(TOKENS_100);
       }
@@ -172,7 +177,7 @@ describe("SegmentTree", () => {
       expect((await sTree.treeNode(10)).amount).to.be.equal("233333333333400000000");
       expect((await sTree.treeNode(22)).amount).to.be.equal("0");
     });
-    it("add liquidity to 7 leafs, top remove 100, withdraw leaf #1 add by 7 leaves", async () => {
+    it.skip("add liquidity to 7 leafs, top remove 100, withdraw leaf #1 add for 7 leaves", async () => {
       for (const i of Array(7).keys()) {
         await sTree.nodeAddLiquidity(TOKENS_100);
       }
@@ -341,5 +346,214 @@ describe("SegmentTree", () => {
         console.log(i, (await sTree.treeNode(i)).amount.toString());
       } */
     });
+    describe("7 interates with (add liquidity 100 and top remove 100), mixed addLimit", async () => {
+      beforeEach(async () => {
+        for (const i of Array(3).keys()) {
+          await sTree.nodeAddLiquidity(TOKENS_100);
+          await sTree.remove(TOKENS_10);
+        }
+        /*
+          Segment tree structure after nodeAddLiquidity(TOKENS_100):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(270)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(270)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(270)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |     8(173.5714) |       9(96.4285)    |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(90) | 17(100)| 18(96.4285)|   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+              100    100          100          
+        */
+      });
+      it("straight addings", async () => {
+        /*         for (const i of Array(3).keys()) {
+          await sTree.addLimit(tokens(10), 16 + i);
+        } */
+        await sTree.addLimit(tokens(10), 16);
+        /*
+          Segment tree structure after nodeAddLiquidity(TOKENS_100):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(280)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(280)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(280)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |     8(183.5714) |       9(96.4285)    |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(100) | 17(100)| 18(96.4285)|   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+              100    100          100          
+        */
+
+        await sTree.addLimit(tokens(10), 17);
+
+        /*
+          Segment tree structure after nodeAddLiquidity(TOKENS_100):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(290)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(290)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(290)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |     8(193.5714) |       9(96.4285)    |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(100)| 17(100)| 18(96.4285)|   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+              100    100          100          
+        */
+
+        await sTree.addLimit(tokens(10), 18);
+
+        /*
+          Segment tree structure after nodeAddLiquidity(TOKENS_100):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(300)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(300)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(300)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |     8(200.2463) |       9(99.7536)    |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(100)| 17(100)| 18(99.7536)|   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+              100    100          100          
+        */
+
+        /* for (const i of Array(SMALL_TREE_LEAFS * 2).keys()) {
+          console.log(i, (await sTree.treeNode(i)).amount.toString());
+        } */
+
+        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(16))).to.be.equal("100123152709360000000");
+        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(17))).to.be.equal("100123152709360000000");
+        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(18))).to.be.equal("99753694581280000000");
+      });
+
+      it("reverse addings", async () => {
+        await sTree.addLimit(tokens(10), 18);
+        /*
+          Segment tree structure after nodeAddLiquidity(TOKENS_100):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(280)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(280)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(280)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |     8(180)      |         9(100)      |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(90) | 17(100)|  18(100)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+              100    100          100          
+        */
+
+        await sTree.addLimit(tokens(10), 17);
+        /*
+          Segment tree structure after nodeAddLiquidity(TOKENS_100):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(290)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(290)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(290)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |     8(190)      |         9(100)      |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(90) | 17(100)|  18(100)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+              100    100          100          
+        */
+
+        await sTree.addLimit(tokens(10), 16);
+        /*
+          Segment tree structure after nodeAddLiquidity(TOKENS_100):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(300)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(300)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(300)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |     8(200)      |         9(100)      |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(100) | 17(100)|  18(100)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+              100    100          100          
+        */
+        /* for (const i of Array(3).keys()) {
+          await sTree.addLimit(tokens(10), 18 - i);
+        } */
+        /* for (const i of Array(SMALL_TREE_LEAFS * 2).keys()) {
+          console.log(i, (await sTree.treeNode(i)).amount.toString());
+        } */
+
+        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(16))).to.be.equal(tokens(100));
+        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(17))).to.be.equal(tokens(100));
+        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(18))).to.be.equal(tokens(100));
+      });
+    });
+  });
+  describe("Example tree (4 leaves)", async () => {
+    before(async () => {
+      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS);
+    });
+    it("nodeAddLiquidity(100$)", async () => {
+      await sTree.nodeAddLiquidity(TOKENS_100);
+      await sTree.nodeAddLiquidity(TOKENS_200);
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_300);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_300);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
+    });
+    it("remove(10$) and addliquidity", async () => { 
+      await sTree.remove(TOKENS_10);
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_290);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_290);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);      
+
+      await sTree.nodeAddLiquidity(TOKENS_300);
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(590));
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_290);
+      expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
+    });
+    it("addLimit(15$, #5)", async () => {
+      await sTree.addLimit(tokens(13), 5);
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(603));
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(303));
+      expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
+    })
+    it("nodeWithdrawLiquidity(4)", async () => {
+      let tx4 = await sTree.nodeWithdrawLiquidity(4);
+      expect(await getNodeAmount(sTree, 1)).to.be.equal("502000000000101000000"); //~502
+      expect(await getNodeAmount(sTree, 2)).to.be.equal("202000000000101000000"); //~202
+      expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal("201999999999798000000"); //~202
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
+      expect(await getWithdrawnAmount(tx4)).to.be.equal("100999999999899000000"); //~101
+    })
+    it("nodeWithdrawLiquidity(5)", async () => {
+      let tx5 = await sTree.nodeWithdrawLiquidity(5);
+      console.log(await getWithdrawnAmount(tx5));
+      expect(await getNodeAmount(sTree, 1)).to.be.equal("300000000000303000000"); //~300
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(            "303000000"); //~0
+      expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
+      expect(await getWithdrawnAmount(tx5)).to.be.equal("201999999999798000000"); //~101
+    })
   });
 });

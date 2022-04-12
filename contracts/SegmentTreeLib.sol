@@ -2,7 +2,8 @@
 
 pragma solidity 0.8.3;
 
-//import "hardhat/console.sol";
+import "hardhat/console.sol";
+
 contract SegmentTree {
     uint40 constant decimals = 10**12;
     uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
@@ -310,6 +311,13 @@ contract SegmentTree {
                 uint128 forLeftAmount = (amount *
                     ((lAmount * decimals) / sumAmounts)) / decimals;
 
+                /* console.log("for left %s", node * 2, forLeftAmount);
+                console.log(
+                    "for right %s",
+                    node * 2 + 1,
+                    amount - forLeftAmount
+                ); */
+
                 // l in [begin,mid] - part in left child
                 pushLazy(node * 2, begin, mid, l, mid, forLeftAmount, isSub);
 
@@ -376,7 +384,7 @@ contract SegmentTree {
         if (fromNumber == 1) {
             return 1;
         }
-        return (fromNumber % 2 == 0 ? fromNumber : fromNumber - 1) / 2;
+        return fromNumber / 2;
     }
 
     /**

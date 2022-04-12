@@ -7,4 +7,7 @@ This project demonstrates "segment tree" approach for accounting additions and w
 ```shell
 npx hardhat compile
 npx hardhat test
-```# SegmentTree
+```
+## methods short description
+
+
