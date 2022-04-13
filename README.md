@@ -38,7 +38,7 @@ Segment tree navigation is done by node number calculation:
 
 ## Adding liquidity
 With each liquidity addition, the following is done:
-1. initialization of the next sheet in order (next unused).
+1. initialization of the next leaf in order (next unused).
 2. adding the sum to the leaf's parent
 3. adding the sum to the parent ancestor and so on up to the segment tree root, recursively.
    
