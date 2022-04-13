@@ -526,7 +526,7 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
     });
-    it("addLimit(15$, #5)", async () => {
+    it("addLimit(13$, #5)", async () => {
       await sTree.addLimit(tokens(13), 5);
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(603));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(303));

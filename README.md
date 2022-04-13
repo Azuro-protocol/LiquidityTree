@@ -93,7 +93,7 @@ remove(10$)
 *after that, for example, liquidity was added (to the next leaf **6**), nodes **6**, **3**, **1*** were updated
 
 ```shell
-nodeAddLiquidity(200$)
+nodeAddLiquidity(300$)
 +--------------------------------------------+
 |                    1 (590$)                |
 +------------------------+-------------------+
@@ -112,7 +112,7 @@ Called with **```function addLimit(uint128 amount, uint48 leaf) public```**
 
 ```shell
 addLimit(13$, 5)
-+15$  [4, 5]
++13$  [4, 5]
 +--------------------------------------------+
 |                    1 (603$)                |
 +------------------------+-------------------+
