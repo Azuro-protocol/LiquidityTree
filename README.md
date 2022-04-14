@@ -123,14 +123,14 @@ addLimit(13$, 5)
 ```
 
 ## Liquidity withdrawal
-Called by **```function nodeWithdrawLiquidity(uint48 leaf) public```**
+Called by **```function nodeWithdraw(uint48 leaf) public```**
 Under the hood:
 1. Search for "most updated parent" of the leaf
 2. leaf's amount value updating from the "most updated parent" (recursively from parent to child)
 3. full liquidity withdrawal from the leaf, updating all parent nodes from the leaf to the root node.
 
 ```shell
-nodeWithdrawLiquidity(4) 
+nodeWithdraw(4) 
 +--------------------------------------------+
 |                     1 (502$)               |
 +------------------------+-------------------+
@@ -141,7 +141,7 @@ nodeWithdrawLiquidity(4)
      -101$
 
 
-nodeWithdrawLiquidity(5) 
+nodeWithdraw(5) 
 +--------------------------------------------+
 |                     1 (300$)               |
 +------------------------+-------------------+

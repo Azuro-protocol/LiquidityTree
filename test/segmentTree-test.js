@@ -8,6 +8,7 @@ const TOKENS_202 = tokens(202);
 const TOKENS_200 = tokens(200);
 const TOKENS_100 = tokens(100);
 const TOKENS_290 = tokens(290);
+const TOKENS_50 = tokens(50);
 const TOKENS_10 = tokens(10);
 const BIG_TREE_LEAFS = 1_099_511_627_776;
 const SMALL_TREE_LEAFS = 16;
@@ -32,10 +33,10 @@ describe("SegmentTree", () => {
         await sTree.remove(TOKENS_100);
 
         // distribute back 100, zero profit
-        await sTree.addLimit(tokens(100), lastFilledLeaf);
+        await sTree.addLimit(TOKENS_100, lastFilledLeaf);
       }
 
-      expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(lastFilledLeaf))).to.be.equal(TOKENS_100);
+      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(lastFilledLeaf))).to.be.equal(TOKENS_100);
     });
     describe("add 1000, get 100", async () => {
       let lastFilledLeaf, initLiquidity;
@@ -52,12 +53,12 @@ describe("SegmentTree", () => {
       });
       it("return 200 profit: 100 back + 100 distribution on 100 leaves, finally 101 on each leaf", async () => {
         // return 200 from game result
-        await sTree.addLimit(tokens(200), lastFilledLeaf);
+        await sTree.addLimit(TOKENS_200, lastFilledLeaf);
 
         let totalWitdrawn = BigNumber.from(0);
         for (const i of Array(100).keys()) {
           totalWitdrawn = totalWitdrawn.add(
-            BigNumber.from(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(firstLeaf + i)))
+            BigNumber.from(await getWithdrawnAmount(await sTree.nodeWithdraw(firstLeaf + i)))
           );
         }
 
@@ -73,7 +74,7 @@ describe("SegmentTree", () => {
         let totalWitdrawn = BigNumber.from(0);
         for (const i of Array(100).keys()) {
           totalWitdrawn = totalWitdrawn.add(
-            BigNumber.from(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(firstLeaf + i)))
+            BigNumber.from(await getWithdrawnAmount(await sTree.nodeWithdraw(firstLeaf + i)))
           );
         }
 
@@ -112,10 +113,10 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(700));
       expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
       expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(300));
-      expect(await getNodeAmount(sTree, 8)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 9)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 10)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 11)).to.be.equal(tokens(100));
+      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_100);
 
       await sTree.add(TOKENS_100);
       /*
@@ -145,10 +146,10 @@ describe("SegmentTree", () => {
       expect((await sTree.treeNode(10)).amount).to.be.equal("228571428571438095238");
       expect((await sTree.treeNode(22)).amount).to.be.equal("114285714285761904762");
 
-      await sTree.nodeWithdrawLiquidity(16);
+      await sTree.nodeWithdraw(16);
 
       /*
-        Segment tree structure after nodeWithdrawLiquidity(16):
+        Segment tree structure after nodeWithdraw(16):
         +--------------------------------------------------------------------------------------------------------------------+
         |                                                                         1(700)                                     |
         +----------------------------------------------------------------------------+---------------------------------------+
@@ -193,10 +194,10 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(600));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(600));
       expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 8)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 9)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 10)).to.be.equal(tokens(200));
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_200);
 
       await sTree.add(TOKENS_100);
       /*
@@ -251,10 +252,10 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(700));
       expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
       expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(300));
-      expect(await getNodeAmount(sTree, 8)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 9)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 10)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 11)).to.be.equal(tokens(100));
+      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_100);
 
       await sTree.remove(TOKENS_100);
 
@@ -286,15 +287,15 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(600));
       expect(await getNodeAmount(sTree, 4)).to.be.equal("342857142857200000000");
       expect(await getNodeAmount(sTree, 5)).to.be.equal("257142857142800000000");
-      expect(await getNodeAmount(sTree, 8)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 9)).to.be.equal(tokens(200));
+      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 10)).to.be.equal("171428571428561904762");
       expect(await getNodeAmount(sTree, 11)).to.be.equal("85714285714238095238");
 
-      let tx = await sTree.nodeWithdrawLiquidity(16);
+      let tx = await sTree.nodeWithdraw(16);
 
       /*
-        Segment tree structure after nodeWithdrawLiquidity(16):
+        Segment tree structure after nodeWithdraw(16):
         +---------------------------------------------------------------------------------------------------------------------+
         |                                                             1(514.2857)                                             |
         +-----------------------------------------------------------------------------+---------------------------------------+
@@ -342,10 +343,10 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 9)).to.be.equal("171428571428600000000");
       expect(await getNodeAmount(sTree, 10)).to.be.equal("171428571428561904762");
       expect(await getNodeAmount(sTree, 11)).to.be.equal("185714285714238095238");
-      expect(await getNodeAmount(sTree, 23)).to.be.equal(tokens(100));
+      expect(await getNodeAmount(sTree, 23)).to.be.equal(TOKENS_100);
 
       //addLimit only for leaves [16-22], 23 not included
-      await sTree.addLimit(tokens(100), 22);
+      await sTree.addLimit(TOKENS_100, 22);
 
       /*
         Segment tree structure after addLimit(100, 22):
@@ -365,7 +366,7 @@ describe("SegmentTree", () => {
         2 changed 614.2857       -> 714.2857
         4 changed 257.1428571429 -> 307.1428571429 by 50.00 
         5 changed 357.1428571429 -> 407.1428571429 by 50.00 (because 357.1428 - 100 = 257.1428)
-        23 not changed because it is excluded by addLimit(tokens(100), 22)
+        23 not changed because it is excluded by addLimit(TOKENS_100, 22)
       */
 
       expect(await getNodeAmount(sTree, 1)).to.be.equal("714285714285700000000");
@@ -377,7 +378,7 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 10)).to.be.equal("204761904761861904762");
       expect(await getNodeAmount(sTree, 11)).to.be.equal("202380952380938095238");
       expect(await getNodeAmount(sTree, 22)).to.be.equal("102380952380938095238");
-      expect(await getNodeAmount(sTree, 23)).to.be.equal(tokens(100));
+      expect(await getNodeAmount(sTree, 23)).to.be.equal(TOKENS_100);
 
       // checksum correctness node = left child + right child
       expect((await getNodeAmount(sTree, 4)).add(await getNodeAmount(sTree, 5))).to.be.equal(
@@ -469,9 +470,9 @@ describe("SegmentTree", () => {
               100    100          100          
         */
 
-        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(16))).to.be.equal("100123152709360000000");
-        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(17))).to.be.equal("100123152709360000000");
-        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(18))).to.be.equal("99753694581280000000");
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(16))).to.be.equal("100123152709360000000");
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(17))).to.be.equal("100123152709360000000");
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal("99753694581280000000");
       });
 
       it("reverse addings", async () => {
@@ -526,9 +527,12 @@ describe("SegmentTree", () => {
               100    100          100          
         */
 
-        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(16))).to.be.equal(tokens(100));
-        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(17))).to.be.equal(tokens(100));
-        expect(await getWithdrawnAmount(await sTree.nodeWithdrawLiquidity(18))).to.be.equal(tokens(100));
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(16))).to.be.equal(TOKENS_100);
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(17))).to.be.equal(TOKENS_100);
+        // get 50 % of leaf 18 
+        expect(await getWithdrawnAmount(await sTree.nodeWithdrawPercent(18, 500000000000))).to.be.equal(TOKENS_50);
+        // get rest of leaf 18 
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal(TOKENS_50);
       });
     });
   });
@@ -568,8 +572,8 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
     });
-    it("nodeWithdrawLiquidity(4)", async () => {
-      let tx4 = await sTree.nodeWithdrawLiquidity(4);
+    it("nodeWithdraw(4)", async () => {
+      let tx4 = await sTree.nodeWithdraw(4);
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(502));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_202);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
@@ -578,8 +582,8 @@ describe("SegmentTree", () => {
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
       expect(await getWithdrawnAmount(tx4)).to.be.equal(tokens(101));
     });
-    it("nodeWithdrawLiquidity(5)", async () => {
-      let tx5 = await sTree.nodeWithdrawLiquidity(5);
+    it("nodeWithdraw(5)", async () => {
+      let tx5 = await sTree.nodeWithdraw(5);
       expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_300);
       expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);

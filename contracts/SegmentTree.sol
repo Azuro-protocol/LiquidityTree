@@ -54,9 +54,25 @@ contract SegmentTree {
      * @dev 1 - get last updated parent most near to the leaf
      * @dev 2 - push all changes from found parent doen to the leaf - that updates leaf's amount
      * @dev 3 - execute withdraw of leaf amount and update amount changing up to top parents
+     * @param leaf - leaf number to completely withdraw
      */
-    function nodeWithdrawLiquidity(uint48 leaf) public {
+    function nodeWithdraw(uint48 leaf) public {
+        nodeWithdrawPercent(leaf, decimals);
+    }
+
+    /**
+     * @dev withdraw part of liquidity from the leaf, due possible many changes in leafe's parent nodes
+     * @dev it is needed firstly to update its amount and then withdraw
+     * @dev used steps:
+     * @dev 1 - get last updated parent most near to the leaf
+     * @dev 2 - push all changes from found parent doen to the leaf - that updates leaf's amount
+     * @dev 3 - execute withdraw of leaf amount and update amount changing up to top parents
+     * @param leaf - 
+     * @param percent - percent of leaf amount 1*10^12 is 100%, 5*10^11 is 50%
+     */
+    function nodeWithdrawPercent(uint48 leaf, uint40 percent) public {        
         require(treeNode[leaf].timestamp != 0, "Leaf not exist");
+        require(percent > 0 && percent <= decimals, "Leaf not exist");
         // get last-updated top node
         (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
             1,
@@ -71,8 +87,8 @@ contract SegmentTree {
         // push changes from last-updated node down to the leaf, if leaf is not up to date
         push(updatedNode, begin, end, leaf);
 
-        // remove amount from leaf to it's parents
-        uint128 withdrawAmount = treeNode[leaf].amount;
+        // remove amount (percent of amount) from leaf to it's parents
+        uint128 withdrawAmount = treeNode[leaf].amount * percent / decimals;
         updateUp(leaf, withdrawAmount, true);
 
         emit withdrawn(msg.sender, withdrawAmount);
