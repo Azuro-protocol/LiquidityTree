@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
-
-//import "hardhat/console.sol";
+pragma solidity 0.8.4;
 
 contract SegmentTree {
     uint40 constant decimals = 10**12;
