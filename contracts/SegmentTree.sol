@@ -3,7 +3,7 @@
 pragma solidity 0.8.4;
 
 contract SegmentTree {
-    uint40 constant decimals = 10**12;
+    uint40 constant DECIMALS = 10**12;
     uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
 
     uint48 public nextNode; // next unused node number for adding liquidity
@@ -57,7 +57,7 @@ contract SegmentTree {
      * @param leaf - leaf number to completely withdraw
      */
     function nodeWithdraw(uint48 leaf) public {
-        nodeWithdrawPercent(leaf, decimals);
+        nodeWithdrawPercent(leaf, DECIMALS);
     }
 
     /**
@@ -72,7 +72,7 @@ contract SegmentTree {
      */
     function nodeWithdrawPercent(uint48 leaf, uint40 percent) public {        
         require(treeNode[leaf].timestamp != 0, "Leaf not exist");
-        require(percent > 0 && percent <= decimals, "Leaf not exist");
+        require(percent > 0 && percent <= DECIMALS, "Leaf not exist");
         // get last-updated top node
         (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
             1,
@@ -88,7 +88,7 @@ contract SegmentTree {
         push(updatedNode, begin, end, leaf);
 
         // remove amount (percent of amount) from leaf to it's parents
-        uint128 withdrawAmount = treeNode[leaf].amount * percent / decimals;
+        uint128 withdrawAmount = treeNode[leaf].amount * percent / DECIMALS;
         updateUp(leaf, withdrawAmount, true);
 
         emit withdrawn(msg.sender, withdrawAmount);
@@ -318,7 +318,7 @@ contract SegmentTree {
                     );
                 uint128 sumAmounts = lAmount + rAmount;
                 uint128 forLeftAmount = (amount *
-                    ((lAmount * decimals) / sumAmounts)) / decimals;
+                    ((lAmount * DECIMALS) / sumAmounts)) / DECIMALS;
 
                 // l in [begin,mid] - part in left child
                 pushLazy(node * 2, begin, mid, l, mid, forLeftAmount, isSub);
