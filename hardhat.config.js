@@ -54,4 +54,7 @@ module.exports = {
     enabled: true,
     currency: "USD",
   },
+  mocha: {
+    timeout: 100000000
+  }
 };
