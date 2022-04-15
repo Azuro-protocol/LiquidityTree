@@ -215,6 +215,22 @@ contract SegmentTree {
     }
 
     /**
+     * @dev remove amount only for limited leaves in tree [first_leaf, leaf]
+     * @param amount value to remove
+     */
+    function removeLimit(uint128 amount, uint48 leaf) public {
+        pushLazy(
+            1,
+            LIQUIDITYNODES,
+            LIQUIDITYNODES * 2 - 1,
+            LIQUIDITYNODES,
+            leaf,
+            amount,
+            true
+        );
+    }
+
+    /**
      * @dev remove amount from whole tree, starting from top node #1
      * @param amount value to remove
      */
