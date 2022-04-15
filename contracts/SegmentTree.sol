@@ -271,6 +271,7 @@ contract SegmentTree {
         uint256 lAmount = treeNode[lChild].amount;
         uint256 rAmount = treeNode[rChild].amount;
         uint256 sumAmounts = lAmount + rAmount;
+        if (sumAmounts == 0) return;
         uint128 setLAmount = uint128((amount * lAmount) / sumAmounts);
 
         // update left and right child
@@ -333,6 +334,7 @@ contract SegmentTree {
                             : 0
                     );
                 uint128 sumAmounts = lAmount + rAmount;
+                if (sumAmounts == 0) return;
                 uint128 forLeftAmount = (amount *
                     ((lAmount * DECIMALS) / sumAmounts)) / DECIMALS;
 

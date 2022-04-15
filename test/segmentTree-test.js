@@ -532,6 +532,9 @@ describe("SegmentTree", () => {
         expect(await getWithdrawnAmount(await sTree.nodeWithdrawPercent(18, 500000000000))).to.be.equal(TOKENS_50);
         // get rest of leaf 18 
         expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal(TOKENS_50);
+
+        //check double withdraw
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal(0);
         
         await sTree.removeLimit(tokens(10), 16);
         /*
