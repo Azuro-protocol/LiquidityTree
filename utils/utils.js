@@ -33,8 +33,8 @@ const getNodeAmount = async (sTree, node) => {
 };
 
 const prepareTree = async (ethers, leafs) => {
-  const SEGMENTTREE = await ethers.getContractFactory("SegmentTree");
-  let tree = await SEGMENTTREE.deploy(leafs);
+  const LIQUIDITYTREE = await ethers.getContractFactory("LiquidityTree");
+  let tree = await LIQUIDITYTREE.deploy(leafs);
   await tree.deployed();
   return tree;
 };

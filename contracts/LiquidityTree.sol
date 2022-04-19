@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
-//import "hardhat/console.sol";
+contract LiquidityTree {
+    struct Node {
+        uint64 actionNumber; // last update number
+        uint128 amount; // node amount
+    }
 
-contract SegmentTree {
-    uint40 constant decimals = 10**12;
+    uint40 constant DECIMALS = 10**12;
     uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
 
     uint48 public nextNode; // next unused node number for adding liquidity
 
-    struct Node {
-        uint64 timestamp; // last update time
-        uint128 amount; // node amount
-    }
+    uint64 public actionNumber; // action number, used instead of timestamp for splitting changes time on the same nodes
 
-    // segment tree
+    // liquidity (segment) tree
     mapping(uint48 => Node) public treeNode;
 
     event withdrawn(address wallet, uint128 amount);
 
     /**
      * @dev initializing LIQUIDITYNODES and nextNode. 
-     * @dev LIQUIDITYNODES is count of segment tree leaves contains single liquidity addings
-     * @dev segment tree build as array of 2*LIQUIDITYNODES count, top node has id #1 (id #0 not used)
-     * @dev segment tree leaves is array [LIQUIDITYNODES, 2*LIQUIDITYNODES-1]
-     * @dev segment tree node index N has left child index 2*N and right child index 2N+1
+     * @dev LIQUIDITYNODES is count of liquidity (segment) tree leaves contains single liquidity addings
+     * @dev liquidity (segment) tree build as array of 2*LIQUIDITYNODES count, top node has id #1 (id #0 not used)
+     * @dev liquidity (segment) tree leaves is array [LIQUIDITYNODES, 2*LIQUIDITYNODES-1]
+     * @dev liquidity (segment) tree node index N has left child index 2*N and right child index 2N+1
      * @dev +--------------------------------------------+
             |                  1 (top node)              |
             +------------------------+-------------------+
@@ -38,14 +38,16 @@ contract SegmentTree {
     constructor(uint48 liquidityNodes) {
         LIQUIDITYNODES = liquidityNodes;
         nextNode = liquidityNodes;
+        actionNumber++; // start from non zero
     }
 
     /**
      * @dev add liquidity amount from the leaf up to top node
      * @param amount - adding amount
      */
-    function nodeAddLiquidity(uint128 amount) public {
-        updateUp(nextNode, amount, false);
+    function nodeAddLiquidity(uint128 amount) public returns (uint48 resNode) {
+        updateUp(nextNode, amount, false, ++actionNumber);
+        resNode = nextNode;
         nextNode++;
     }
 
@@ -56,13 +58,32 @@ contract SegmentTree {
      * @dev 1 - get last updated parent most near to the leaf
      * @dev 2 - push all changes from found parent doen to the leaf - that updates leaf's amount
      * @dev 3 - execute withdraw of leaf amount and update amount changing up to top parents
+     * @param leaf - leaf number to completely withdraw
      */
-    function nodeWithdrawLiquidity(uint48 leaf) public {
-        require(treeNode[leaf].timestamp != 0, "Leaf not exist");
+    function nodeWithdraw(uint48 leaf) public returns (uint128 withdrawAmount) {
+        withdrawAmount = nodeWithdrawPercent(leaf, DECIMALS);
+    }
+
+    /**
+     * @dev withdraw part of liquidity from the leaf, due possible many changes in leafe's parent nodes
+     * @dev it is needed firstly to update its amount and then withdraw
+     * @dev used steps:
+     * @dev 1 - get last updated parent most near to the leaf
+     * @dev 2 - push all changes from found parent doen to the leaf - that updates leaf's amount
+     * @dev 3 - execute withdraw of leaf amount and update amount changing up to top parents
+     * @param leaf -
+     * @param percent - percent of leaf amount 1*10^12 is 100%, 5*10^11 is 50%
+     */
+    function nodeWithdrawPercent(uint48 leaf, uint40 percent)
+        public
+        returns (uint128 withdrawAmount)
+    {
+        require(treeNode[leaf].actionNumber != 0, "Leaf not exist");
+        require(percent > 0 && percent <= DECIMALS, "Leaf not exist");
         // get last-updated top node
         (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
             1,
-            treeNode[1].timestamp,
+            treeNode[1].actionNumber,
             LIQUIDITYNODES,
             LIQUIDITYNODES * 2 - 1,
             1,
@@ -71,11 +92,12 @@ contract SegmentTree {
             leaf
         );
         // push changes from last-updated node down to the leaf, if leaf is not up to date
-        push(updatedNode, begin, end, leaf);
+        push(updatedNode, begin, end, leaf, ++actionNumber);
 
-        // remove amount from leaf to it's parents
-        uint128 withdrawAmount = treeNode[leaf].amount;
-        updateUp(leaf, withdrawAmount, true);
+        // remove amount (percent of amount) from leaf to it's parents
+        withdrawAmount = (treeNode[leaf].amount * percent) / DECIMALS;
+
+        updateUp(leaf, withdrawAmount, true, ++actionNumber);
 
         emit withdrawn(msg.sender, withdrawAmount);
     }
@@ -114,7 +136,7 @@ contract SegmentTree {
         )
     {
         // if node is older than it's parent, stop and return parent
-        if (treeNode[node].timestamp < parentTimestamp) {
+        if (treeNode[node].actionNumber < parentTimestamp) {
             return (parent, parentBegin, parentEnd);
         }
         if (node == leaf) {
@@ -155,16 +177,18 @@ contract SegmentTree {
      * @param child node for update
      * @param amount value for update
      * @param isSub true - reduce, false - add
+     * @param action_ action number
      */
     function updateUp(
         uint48 child,
         uint128 amount,
-        bool isSub
+        bool isSub,
+        uint64 action_
     ) internal {
-        changeAmount(child, amount, isSub);
+        changeAmount(child, amount, isSub, action_);
         // if not top parent
         if (child != 1) {
-            updateUp(getParent(child), amount, isSub);
+            updateUp(getParent(child), amount, isSub, action_);
         }
     }
 
@@ -180,7 +204,8 @@ contract SegmentTree {
             LIQUIDITYNODES,
             nextNode - 1,
             amount,
-            false
+            false,
+            ++actionNumber
         );
     }
 
@@ -189,6 +214,21 @@ contract SegmentTree {
      * @param amount value to add
      */
     function addLimit(uint128 amount, uint48 leaf) public {
+        // get last-updated top node
+        (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
+            1,
+            treeNode[1].actionNumber,
+            LIQUIDITYNODES,
+            LIQUIDITYNODES * 2 - 1,
+            1,
+            LIQUIDITYNODES,
+            LIQUIDITYNODES * 2 - 1,
+            leaf
+        );
+
+        // push changes from last-updated node down to the leaf, if leaf is not up to date
+        push(updatedNode, begin, end, leaf, ++actionNumber);
+
         pushLazy(
             1,
             LIQUIDITYNODES,
@@ -196,8 +236,43 @@ contract SegmentTree {
             LIQUIDITYNODES,
             leaf,
             amount,
-            false
+            false,
+            ++actionNumber
         );
+    }
+
+    /**
+     * @dev remove amount only for limited leaves in tree [first_leaf, leaf]
+     * @param amount value to remove
+     */
+    function removeLimit(uint128 amount, uint48 leaf) public {
+        if (treeNode[1].amount >= amount) {
+            // get last-updated top node
+            (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
+                1,
+                treeNode[1].actionNumber,
+                LIQUIDITYNODES,
+                LIQUIDITYNODES * 2 - 1,
+                1,
+                LIQUIDITYNODES,
+                LIQUIDITYNODES * 2 - 1,
+                leaf
+            );
+
+            // push changes from last-updated node down to the leaf, if leaf is not up to date
+            push(updatedNode, begin, end, leaf, ++actionNumber);
+
+            pushLazy(
+                1,
+                LIQUIDITYNODES,
+                LIQUIDITYNODES * 2 - 1,
+                LIQUIDITYNODES,
+                leaf,
+                amount,
+                true,
+                ++actionNumber
+            );
+        }
     }
 
     /**
@@ -213,7 +288,8 @@ contract SegmentTree {
                 LIQUIDITYNODES,
                 nextNode - 1,
                 amount,
-                true
+                true,
+                ++actionNumber
             );
         }
     }
@@ -224,12 +300,14 @@ contract SegmentTree {
      * @param begin - leaf search start
      * @param end - leaf search end
      * @param leaf - last node to update
+     * @param action_ action number
      */
     function push(
         uint48 node,
         uint48 begin,
         uint48 end,
-        uint48 leaf
+        uint48 leaf,
+        uint64 action_
     ) internal {
         // if node is leaf, stop
         if (node == leaf) {
@@ -241,18 +319,19 @@ contract SegmentTree {
         uint256 lAmount = treeNode[lChild].amount;
         uint256 rAmount = treeNode[rChild].amount;
         uint256 sumAmounts = lAmount + rAmount;
+        if (sumAmounts == 0) return;
         uint128 setLAmount = uint128((amount * lAmount) / sumAmounts);
 
         // update left and right child
-        setAmount(lChild, setLAmount);
-        setAmount(rChild, amount - setLAmount);
+        setAmount(lChild, setLAmount, action_);
+        setAmount(rChild, amount - setLAmount, action_);
 
         uint48 mid = (begin + end) / 2;
 
         if (begin <= leaf && leaf <= mid) {
-            push(lChild, begin, mid, leaf);
+            push(lChild, begin, mid, leaf, action_);
         } else {
-            push(rChild, mid + 1, end, leaf);
+            push(rChild, mid + 1, end, leaf, action_);
         }
     }
 
@@ -265,6 +344,7 @@ contract SegmentTree {
      * @param r - right leaf child
      * @param amount - amount to add/reduce stored amounts
      * @param isSub - true means negative to reduce
+     * @param action_ action number
      */
     function pushLazy(
         uint48 node,
@@ -273,11 +353,12 @@ contract SegmentTree {
         uint48 l,
         uint48 r,
         uint128 amount,
-        bool isSub
+        bool isSub,
+        uint64 action_
     ) internal {
         if ((begin == l && end == r) || (begin == end)) {
             // if node leafs equal to leaf interval then stop
-            changeAmount(node, amount, isSub);
+            changeAmount(node, amount, isSub, action_);
             return;
         }
 
@@ -286,7 +367,7 @@ contract SegmentTree {
         if (begin <= l && l <= mid) {
             if (begin <= r && r <= mid) {
                 // [l,r] in [begin,mid] - all leafs in left child
-                pushLazy(node * 2, begin, mid, l, r, amount, isSub);
+                pushLazy(node * 2, begin, mid, l, r, amount, isSub, action_);
             } else {
                 uint128 lAmount = treeNode[node * 2].amount;
                 // get right amount excluding unused leaves when adding amounts
@@ -303,11 +384,21 @@ contract SegmentTree {
                             : 0
                     );
                 uint128 sumAmounts = lAmount + rAmount;
+                if (sumAmounts == 0) return;
                 uint128 forLeftAmount = (amount *
-                    ((lAmount * decimals) / sumAmounts)) / decimals;
+                    ((lAmount * DECIMALS) / sumAmounts)) / DECIMALS;
 
                 // l in [begin,mid] - part in left child
-                pushLazy(node * 2, begin, mid, l, mid, forLeftAmount, isSub);
+                pushLazy(
+                    node * 2,
+                    begin,
+                    mid,
+                    l,
+                    mid,
+                    forLeftAmount,
+                    isSub,
+                    action_
+                );
 
                 // r in [mid+1,end] - part in right child
                 pushLazy(
@@ -317,14 +408,15 @@ contract SegmentTree {
                     mid + 1,
                     r,
                     amount - forLeftAmount,
-                    isSub
+                    isSub,
+                    action_
                 );
             }
         } else {
             // [l,r] in [mid+1,end] - all leafs in right child
-            pushLazy(node * 2 + 1, mid + 1, end, l, r, amount, isSub);
+            pushLazy(node * 2 + 1, mid + 1, end, l, r, amount, isSub, action_);
         }
-        changeAmount(node, amount, isSub);
+        changeAmount(node, amount, isSub, action_);
     }
 
     /**
@@ -332,13 +424,15 @@ contract SegmentTree {
      * @param node - node for changing
      * @param amount - amount value for changing
      * @param isSub - true - reduce by amount, true - add by amount
+     * @param action_ - action number
      */
     function changeAmount(
         uint48 node,
         uint128 amount,
-        bool isSub
+        bool isSub,
+        uint64 action_
     ) internal {
-        treeNode[node].timestamp = uint64(block.timestamp);
+        treeNode[node].actionNumber = action_;
         if (isSub) {
             treeNode[node].amount -= amount;
         } else {
@@ -350,10 +444,15 @@ contract SegmentTree {
      * @dev reset node amount, used in push
      * @param node for set
      * @param amount value
+     * @param action_ action number
      */
-    function setAmount(uint48 node, uint128 amount) internal {
+    function setAmount(
+        uint48 node,
+        uint128 amount,
+        uint64 action_
+    ) internal {
         if (treeNode[node].amount != amount) {
-            treeNode[node].timestamp = uint64(block.timestamp);
+            treeNode[node].actionNumber = action_;
             treeNode[node].amount = amount;
         }
     }
