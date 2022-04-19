@@ -4,7 +4,7 @@ pragma solidity 0.8.4;
 
 contract LiquidityTree {
     struct Node {
-        uint64 actionNumber; // last update number
+        uint64 updateId; // last update number
         uint128 amount; // node amount
     }
 
@@ -14,7 +14,7 @@ contract LiquidityTree {
 
     uint48 public nextNode; // next unused node number for adding liquidity
 
-    uint64 public actionNumber; // action number, used instead of timestamp for splitting changes time on the same nodes
+    uint64 public updateId; // update number, used instead of timestamp for splitting changes time on the same nodes
 
     // liquidity (segment) tree
     mapping(uint48 => Node) public treeNode;
@@ -43,7 +43,7 @@ contract LiquidityTree {
         LIQUIDITYNODES = liquidityNodes;
         LIQUIDITYLASTNODE = liquidityNodes * 2 - 1;
         nextNode = liquidityNodes;
-        actionNumber++; // start from non zero
+        updateId++; // start from non zero
     }
 
     /**
@@ -51,7 +51,7 @@ contract LiquidityTree {
      * @param amount - adding amount
      */
     function nodeAddLiquidity(uint128 amount) public returns (uint48 resNode) {
-        updateUp(nextNode, amount, false, ++actionNumber);
+        updateUp(nextNode, amount, false, ++updateId);
         resNode = nextNode;
         nextNode++;
     }
@@ -83,13 +83,13 @@ contract LiquidityTree {
         public
         returns (uint128 withdrawAmount)
     {
-        if (treeNode[leaf].actionNumber == 0) revert LeafNotExist();
+        if (treeNode[leaf].updateId == 0) revert LeafNotExist();
         if (percent > DECIMALS) revert IncorrectPercent();
 
         // get last-updated top node
         (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
             1,
-            treeNode[1].actionNumber,
+            treeNode[1].updateId,
             LIQUIDITYNODES,
             LIQUIDITYLASTNODE,
             1,
@@ -98,12 +98,12 @@ contract LiquidityTree {
             leaf
         );
         // push changes from last-updated node down to the leaf, if leaf is not up to date
-        push(updatedNode, begin, end, leaf, ++actionNumber);
+        push(updatedNode, begin, end, leaf, ++updateId);
 
         // remove amount (percent of amount) from leaf to it's parents
         withdrawAmount = (treeNode[leaf].amount * percent) / DECIMALS;
 
-        updateUp(leaf, withdrawAmount, true, ++actionNumber);
+        updateUp(leaf, withdrawAmount, true, ++updateId);
 
         emit withdrawn(msg.sender, withdrawAmount);
     }
@@ -112,7 +112,7 @@ contract LiquidityTree {
      * @dev top node is ever most updated, trying to find lower node not older then top node
      * @dev get nearest to leaf (lowest) last-updated node from the parents, runing down from top to leaf
      * @param parent top node
-     * @param parentTimestamp top node timestamp
+     * @param parentUpdate top node update
      * @param parentBegin top node most left leaf
      * @param parentEnd top node most right leaf
      * @param node node parent for the leaf
@@ -125,7 +125,7 @@ contract LiquidityTree {
      */
     function getUpdatedNode(
         uint48 parent,
-        uint64 parentTimestamp,
+        uint64 parentUpdate,
         uint48 parentBegin,
         uint48 parentEnd,
         uint48 node,
@@ -142,7 +142,7 @@ contract LiquidityTree {
         )
     {
         // if node is older than it's parent, stop and return parent
-        if (treeNode[node].actionNumber < parentTimestamp) {
+        if (treeNode[node].updateId < parentUpdate) {
             return (parent, parentBegin, parentEnd);
         }
         if (node == leaf) {
@@ -155,7 +155,7 @@ contract LiquidityTree {
             // work on left child
             (resParent, resBegin, resEnd) = getUpdatedNode(
                 node,
-                parentTimestamp,
+                parentUpdate,
                 begin,
                 end,
                 node * 2,
@@ -167,7 +167,7 @@ contract LiquidityTree {
             // work on right child
             (resParent, resBegin, resEnd) = getUpdatedNode(
                 node,
-                parentTimestamp,
+                parentUpdate,
                 begin,
                 end,
                 node * 2 + 1,
@@ -183,18 +183,18 @@ contract LiquidityTree {
      * @param child node for update
      * @param amount value for update
      * @param isSub true - reduce, false - add
-     * @param action action number
+     * @param updateId_ update number
      */
     function updateUp(
         uint48 child,
         uint128 amount,
         bool isSub,
-        uint64 action
+        uint64 updateId_
     ) internal {
-        changeAmount(child, amount, isSub, action);
+        changeAmount(child, amount, isSub, updateId_);
         // if not top parent
         if (child != 1) {
-            updateUp(getParent(child), amount, isSub, action);
+            updateUp(getParent(child), amount, isSub, updateId_);
         }
     }
 
@@ -211,7 +211,7 @@ contract LiquidityTree {
             nextNode - 1,
             amount,
             false,
-            ++actionNumber
+            ++updateId
         );
     }
 
@@ -223,7 +223,7 @@ contract LiquidityTree {
         // get last-updated top node
         (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
             1,
-            treeNode[1].actionNumber,
+            treeNode[1].updateId,
             LIQUIDITYNODES,
             LIQUIDITYLASTNODE,
             1,
@@ -233,7 +233,7 @@ contract LiquidityTree {
         );
 
         // push changes from last-updated node down to the leaf, if leaf is not up to date
-        push(updatedNode, begin, end, leaf, ++actionNumber);
+        push(updatedNode, begin, end, leaf, ++updateId);
 
         pushLazy(
             1,
@@ -243,7 +243,7 @@ contract LiquidityTree {
             leaf,
             amount,
             false,
-            ++actionNumber
+            ++updateId
         );
     }
 
@@ -256,7 +256,7 @@ contract LiquidityTree {
             // get last-updated top node
             (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
                 1,
-                treeNode[1].actionNumber,
+                treeNode[1].updateId,
                 LIQUIDITYNODES,
                 LIQUIDITYLASTNODE,
                 1,
@@ -266,7 +266,7 @@ contract LiquidityTree {
             );
 
             // push changes from last-updated node down to the leaf, if leaf is not up to date
-            push(updatedNode, begin, end, leaf, ++actionNumber);
+            push(updatedNode, begin, end, leaf, ++updateId);
 
             pushLazy(
                 1,
@@ -276,7 +276,7 @@ contract LiquidityTree {
                 leaf,
                 amount,
                 true,
-                ++actionNumber
+                ++updateId
             );
         }
     }
@@ -295,7 +295,7 @@ contract LiquidityTree {
                 nextNode - 1,
                 amount,
                 true,
-                ++actionNumber
+                ++updateId
             );
         }
     }
@@ -306,14 +306,14 @@ contract LiquidityTree {
      * @param begin - leaf search start
      * @param end - leaf search end
      * @param leaf - last node to update
-     * @param action action number
+     * @param updateId_ update number
      */
     function push(
         uint48 node,
         uint48 begin,
         uint48 end,
         uint48 leaf,
-        uint64 action
+        uint64 updateId_
     ) internal {
         // if node is leaf, stop
         if (node == leaf) {
@@ -329,15 +329,15 @@ contract LiquidityTree {
         uint128 setLAmount = uint128((amount * lAmount) / sumAmounts);
 
         // update left and right child
-        setAmount(lChild, setLAmount, action);
-        setAmount(rChild, amount - setLAmount, action);
+        setAmount(lChild, setLAmount, updateId_);
+        setAmount(rChild, amount - setLAmount, updateId_);
 
         uint48 mid = (begin + end) / 2;
 
         if (begin <= leaf && leaf <= mid) {
-            push(lChild, begin, mid, leaf, action);
+            push(lChild, begin, mid, leaf, updateId_);
         } else {
-            push(rChild, mid + 1, end, leaf, action);
+            push(rChild, mid + 1, end, leaf, updateId_);
         }
     }
 
@@ -350,7 +350,7 @@ contract LiquidityTree {
      * @param r - right leaf child
      * @param amount - amount to add/reduce stored amounts
      * @param isSub - true means negative to reduce
-     * @param action action number
+     * @param updateId_ update number
      */
     function pushLazy(
         uint48 node,
@@ -360,11 +360,11 @@ contract LiquidityTree {
         uint48 r,
         uint128 amount,
         bool isSub,
-        uint64 action
+        uint64 updateId_
     ) internal {
         if ((begin == l && end == r) || (begin == end)) {
             // if node leafs equal to leaf interval then stop
-            changeAmount(node, amount, isSub, action);
+            changeAmount(node, amount, isSub, updateId_);
             return;
         }
 
@@ -373,7 +373,7 @@ contract LiquidityTree {
         if (begin <= l && l <= mid) {
             if (begin <= r && r <= mid) {
                 // [l,r] in [begin,mid] - all leafs in left child
-                pushLazy(node * 2, begin, mid, l, r, amount, isSub, action);
+                pushLazy(node * 2, begin, mid, l, r, amount, isSub, updateId_);
             } else {
                 uint128 lAmount = treeNode[node * 2].amount;
                 // get right amount excluding unused leaves when adding amounts
@@ -403,7 +403,7 @@ contract LiquidityTree {
                     mid,
                     forLeftAmount,
                     isSub,
-                    action
+                    updateId_
                 );
 
                 // r in [mid+1,end] - part in right child
@@ -415,14 +415,14 @@ contract LiquidityTree {
                     r,
                     amount - forLeftAmount,
                     isSub,
-                    action
+                    updateId_
                 );
             }
         } else {
             // [l,r] in [mid+1,end] - all leafs in right child
-            pushLazy(node * 2 + 1, mid + 1, end, l, r, amount, isSub, action);
+            pushLazy(node * 2 + 1, mid + 1, end, l, r, amount, isSub, updateId_);
         }
-        changeAmount(node, amount, isSub, action);
+        changeAmount(node, amount, isSub, updateId_);
     }
 
     /**
@@ -430,15 +430,15 @@ contract LiquidityTree {
      * @param node - node for changing
      * @param amount - amount value for changing
      * @param isSub - true - reduce by amount, true - add by amount
-     * @param action - action number
+     * @param updateId_ - update number
      */
     function changeAmount(
         uint48 node,
         uint128 amount,
         bool isSub,
-        uint64 action
+        uint64 updateId_
     ) internal {
-        treeNode[node].actionNumber = action;
+        treeNode[node].updateId = updateId_;
         if (isSub) {
             treeNode[node].amount -= amount;
         } else {
@@ -450,15 +450,15 @@ contract LiquidityTree {
      * @dev reset node amount, used in push
      * @param node for set
      * @param amount value
-     * @param action action number
+     * @param updateId_ update number
      */
     function setAmount(
         uint48 node,
         uint128 amount,
-        uint64 action
+        uint64 updateId_
     ) internal {
         if (treeNode[node].amount != amount) {
-            treeNode[node].actionNumber = action;
+            treeNode[node].updateId = updateId_;
             treeNode[node].amount = amount;
         }
     }
