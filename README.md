@@ -1,4 +1,4 @@
-# Segment tree project
+# Liquidity tree project
 
 This project demonstrates the "segment tree" approach for accounting additions and withdrawals liquidity and fair profit/loose distribution for bet (stake) protocol
 
@@ -13,19 +13,20 @@ The segment tree root node has the most up-to-date value of the sum of its child
 The root has no parent, and the leaves have no children.
 
 In liquidity accounting, the root node contains the most updated current liquidity.
+Segment Tree named as Liquidity Tree
 
-## Segment tree representation
-All segment tree nodes are presented as array elements.
+## Liquidity tree representation
+All liquidity tree nodes are presented as array elements.
 To store data in **K** elements, you need an array of **K*2+1** elements.
 Element number **0** is not used, root node is number **1**, first leaf is number **K**
 Children of the root node: **2** - left child **3** - right child
 
-Segment tree navigation is done by node number calculation:
+Liquidity tree navigation is done by node number calculation:
 - left child of the node **X** has the number **2*X**
 - right child has the number **2*X+1**
   
 
-*4 elements segment tree example:*
+*4 elements liquidity tree example:*
 ```shell
 +--------------------------------------------+
 |                  1 (top node)              |
@@ -40,7 +41,7 @@ Segment tree navigation is done by node number calculation:
 With each liquidity addition, the following is done:
 1. initialization of the next leaf in order (next unused).
 2. adding the sum to the leaf's parent
-3. adding the sum to the parent ancestor and so on up to the segment tree root, recursively.
+3. adding the sum to the parent ancestor and so on up to the liquidity tree root, recursively.
    
 Method for adding liquidity: **```function nodeAddLiquidity(uint128 amount) public```**
 
@@ -48,7 +49,7 @@ Thus, after adding, the **```amount```** will be added to the leaf and to all it
 Leaf initialization can be done only once.
 In the future, leaf's amount can only change as a result of the distribution of profit / loss or the withdrawal of liquidity (total) from the leaf.
 
-*Segment tree state after adding liquidity, updated nodes **4**, **5**, **2**, **1***
+*Liquidity tree state after adding liquidity, updated nodes **4**, **5**, **2**, **1***
 
 ```shell
 nodeAddLiquidity(100$)
@@ -73,18 +74,18 @@ nodeAddLiquidity(200$)
 ```
 
 ## Taking liquidity for "game" reinforcement
-For "game" reinforcement, liquidity took according to segment tree current state: root node **1** current amount and for further fair distribution, you must "remember" the last initialized leaf.
+For "game" reinforcement, liquidity took according to liquidity tree current state: root node **1** current amount and for further fair distribution, you must "remember" the last initialized leaf.
 Liquidity is taken using method **```function remove(uint128 amount) public```**.
 The **```remove```** method uses "lazy updating" of child nodes so that if the updated list of leaves lies entirely in the parent node, then only this parent node is updated and further changes to child nodes are not made and postponed.
 
-*Segment tree state that after taking liquidity for the "game" ($10), the nodes **1** and **2** have been updated, because the changes affect only the list of leaves [4, 5], and the entire list is included in the node **2**, you only need to update the sum of the node **1** and **2***
+*Liquidity tree state that after taking liquidity for the "game" ($10), the nodes **1** and **2** have been updated, because the changes affect only the list of leaves [4, 5], and the entire list is included in the node **2**, you only need to update the sum of the node **1** and **2***
 
 ```shell
-remove(10$)
+remove(30$)
 +--------------------------------------------+
-|                    1 (290$)                |
+|                    1 (270$)                |
 +------------------------+-------------------+
-|         2 (290$)       |         3         |
+|         2 (270$)       |         3         |
 +-------------+----------+---------+---------+
 |   4 (100$)  | 5 (200$) |    6    |    7    |
 +-------------+----------+---------+---------+
@@ -95,30 +96,30 @@ remove(10$)
 ```shell
 nodeAddLiquidity(300$)
 +--------------------------------------------+
-|                    1 (590$)                |
+|                    1 (570$)                |
 +------------------------+-------------------+
-|         2 (290$)       |    3 (300$)       |
+|         2 (270$)       |    3 (300$)       |
 +-------------+----------+---------+---------+
 |   4 (100$)  | 5 (200$) | 6 (300$)|    7    |
 +-------------+----------+---------+---------+
                             +300$
 ```
 
-## Adding liquidity
+## Return liquidity
 Made by passing the return amount and the leaf number, indicating the range of distribution of the returned amount from the first element to "leaf number" at the time of "taking liquidity".
 Called with **```function addLimit(uint128 amount, uint48 leaf) public```**
 
-*In the example, nodes **1**, **2** are updated. Amount in **4**, **5** not changed, because **4**, **5** enter node **2** and lazy update stopped at **2***
+*In the example, nodes **4**, **5** firstly updated from previouse change (remove(30$)), then nodes **1**, **2** are updated. Amount in **4**, **5** not changed, because **4**, **5** enter node **2** and lazy update stopped at **2***
 
 ```shell
-addLimit(13$, 5)
-+13$  [4, 5]
+addLimit(15$, 5)
++15$  [4, 5]
 +--------------------------------------------+
-|                    1 (603$)                |
+|                    1 (585$)                |
 +------------------------+-------------------+
-|         2 (303$)       |    3 (300$)       |
+|         2 (285$)       |    3 (300$)       |
 +-------------+----------+---------+---------+
-|   4 (100$)  | 5 (200$) | 6 (300$)|    7    |
+|    4 (90$)  | 5 (180$) | 6 (300$)|    7    |
 +-------------+----------+---------+---------+
 ```
 
@@ -132,13 +133,13 @@ Under the hood:
 ```shell
 nodeWithdraw(4) 
 +--------------------------------------------+
-|                     1 (502$)               |
+|                     1 (490$)               |
 +------------------------+-------------------+
-|         2 (202$)       |    3 (300$)       |
+|         2 (190$)       |    3 (300$)       |
 +-------------+----------+---------+---------+
 |    4 (0$)   | 5 (200$) | 6 (300$)|    7    |
 +-------------+----------+---------+---------+
-     -101$
+     -95$
 
 
 nodeWithdraw(5) 
@@ -149,7 +150,7 @@ nodeWithdraw(5)
 +-------------+----------+---------+---------+
 |    4 (0$)   |  5 (0$)  | 6 (300$)|    7    |
 +-------------+----------+---------+---------+
-                  -202$
+                  -190$
 ```
 
 ## compile and test tasks:
