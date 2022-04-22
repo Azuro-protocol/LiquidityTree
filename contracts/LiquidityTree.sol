@@ -21,6 +21,7 @@ contract LiquidityTree {
 
     event withdrawn(address wallet, uint128 amount);
 
+    error IncorrectLeaf();
     error LeafNotExist();
     error IncorrectPercent();
 
@@ -70,13 +71,47 @@ contract LiquidityTree {
     }
 
     /**
+     * @dev leaf withdraw preview, emulates push value from updated node to leaf
+     * @param leaf - withdrawing leaf
+     */
+    function nodeWithdrawView(uint48 leaf)
+        public
+        view
+        returns (uint128 withdrawAmount)
+    {
+        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE) return 0;
+        if (treeNode[leaf].updateId == 0) return 0;
+
+        // get last-updated top node
+        (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
+            1,
+            treeNode[1].updateId,
+            LIQUIDITYNODES,
+            LIQUIDITYLASTNODE,
+            1,
+            LIQUIDITYNODES,
+            LIQUIDITYLASTNODE,
+            leaf
+        );
+
+        return
+            pushView(
+                updatedNode,
+                begin,
+                end,
+                leaf,
+                treeNode[updatedNode].amount
+            );
+    }
+
+    /**
      * @dev withdraw part of liquidity from the leaf, due possible many changes in leafe's parent nodes
      * @dev it is needed firstly to update its amount and then withdraw
      * @dev used steps:
      * @dev 1 - get last updated parent most near to the leaf
      * @dev 2 - push all changes from found parent doen to the leaf - that updates leaf's amount
      * @dev 3 - execute withdraw of leaf amount and update amount changing up to top parents
-     * @param leaf -
+     * @param leaf - leaf number
      * @param percent - percent of leaf amount 1*10^12 is 100%, 5*10^11 is 50%
      */
     function nodeWithdrawPercent(uint48 leaf, uint40 percent)
@@ -84,6 +119,8 @@ contract LiquidityTree {
         returns (uint128 withdrawAmount)
     {
         if (treeNode[leaf].updateId == 0) revert LeafNotExist();
+        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
+            revert IncorrectLeaf();
         if (percent > DECIMALS) revert IncorrectPercent();
 
         // get last-updated top node
@@ -220,6 +257,8 @@ contract LiquidityTree {
      * @param amount value to add
      */
     function addLimit(uint128 amount, uint48 leaf) public {
+        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
+            revert IncorrectLeaf();
         // get last-updated top node
         (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
             1,
@@ -252,6 +291,8 @@ contract LiquidityTree {
      * @param amount value to remove
      */
     function removeLimit(uint128 amount, uint48 leaf) public {
+        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
+            revert IncorrectLeaf();
         if (treeNode[1].amount >= amount) {
             // get last-updated top node
             (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
@@ -323,8 +364,7 @@ contract LiquidityTree {
         uint48 rChild = node * 2 + 1;
         uint128 amount = treeNode[node].amount;
         uint256 lAmount = treeNode[lChild].amount;
-        uint256 rAmount = treeNode[rChild].amount;
-        uint256 sumAmounts = lAmount + rAmount;
+        uint256 sumAmounts = lAmount + treeNode[rChild].amount;
         if (sumAmounts == 0) return;
         uint128 setLAmount = uint128((amount * lAmount) / sumAmounts);
 
@@ -338,6 +378,42 @@ contract LiquidityTree {
             push(lChild, begin, mid, leaf, updateId_);
         } else {
             push(rChild, mid + 1, end, leaf, updateId_);
+        }
+    }
+
+    /**
+     * @dev push changes from last "lazy update" down to leaf
+     * @param node - last node from lazy update
+     * @param begin - leaf search start
+     * @param end - leaf search end
+     * @param leaf - last node to update
+     * @param amount - pushed (calced) amount for the node
+     */
+    function pushView(
+        uint48 node,
+        uint48 begin,
+        uint48 end,
+        uint48 leaf,
+        uint128 amount
+    ) internal view returns (uint128 withdrawAmount) {
+        // if node is leaf, stop
+        if (node == leaf) {
+            return amount;
+        }
+
+        uint48 lChild = node * 2;
+        uint48 rChild = node * 2 + 1;
+        uint256 lAmount = treeNode[lChild].amount;
+        uint256 sumAmounts = lAmount + treeNode[rChild].amount;
+        if (sumAmounts == 0) return 0;
+        uint128 setLAmount = uint128((amount * lAmount) / sumAmounts);
+
+        uint48 mid = (begin + end) / 2;
+
+        if (begin <= leaf && leaf <= mid) {
+            return pushView(lChild, begin, mid, leaf, setLAmount);
+        } else {
+            return pushView(rChild, mid + 1, end, leaf, amount - setLAmount);
         }
     }
 
@@ -420,7 +496,16 @@ contract LiquidityTree {
             }
         } else {
             // [l,r] in [mid+1,end] - all leafs in right child
-            pushLazy(node * 2 + 1, mid + 1, end, l, r, amount, isSub, updateId_);
+            pushLazy(
+                node * 2 + 1,
+                mid + 1,
+                end,
+                l,
+                r,
+                amount,
+                isSub,
+                updateId_
+            );
         }
         changeAmount(node, amount, isSub, updateId_);
     }
