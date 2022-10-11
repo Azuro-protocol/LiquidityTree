@@ -406,8 +406,9 @@ contract LiquidityTree {
         uint48 rChild = node * 2 + 1;
         uint256 lAmount = treeNode[lChild].amount;
         uint256 sumAmounts = lAmount + treeNode[rChild].amount;
-        if (sumAmounts == 0) return 0;
-        uint128 setLAmount = uint128((amount * lAmount) / sumAmounts);
+        uint128 setLAmount = sumAmounts == 0
+            ? 0
+            : uint128((amount * lAmount) / sumAmounts);
 
         uint48 mid = (begin + end) / 2;
 
