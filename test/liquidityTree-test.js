@@ -18,6 +18,7 @@ const TOKENS_20 = tokens(20);
 const TOKENS_10 = tokens(10);
 const BIG_TREE_LEAFS = 1_099_511_627_776;
 const SMALL_TREE_LEAFS = 16;
+const MIDDLE_TREE_LEAFS = 8;
 const TINY_TREE_LEAFS = 2;
 const EXAMPLE_TREE_LEAFS = 4;
 const WITHDRAW_100_PERCENT = 10 ** 12;
@@ -794,6 +795,96 @@ describe("LiquidityTree", () => {
       |   2 (30$)   |  3 (20$) |
       +-------------+----------+
       */
+    });
+  });
+  describe("Example tree (8 leaves) fair distribution", async () => {
+    before(async () => {
+      sTree = await prepareTree(ethers, MIDDLE_TREE_LEAFS);
+    });
+    it("add liquidity 45$, remove 45$, try withdraw it", async () => {
+      // Add three leaves so the one we will be using is the last of the left "main branch"
+      await sTree.nodeAddLiquidity(0);
+      await sTree.nodeWithdraw(8);
+      await sTree.nodeAddLiquidity(0);
+      await sTree.nodeWithdraw(9);
+      await sTree.nodeAddLiquidity(0);
+      await sTree.nodeWithdraw(10);
+
+      // Add liquidity to the node to be tested
+      await sTree.nodeAddLiquidity(TOKENS_45);
+
+      /*
+      +-----------------------------------------------------------------------------------------+
+      |                                          1 (45$)                                        |
+      +--------------------------------------------+--------------------------------------------+
+      |                      2 (45$)               |                      3 (0$)                |
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+
+      |           4 (0$)       |       5 (45$)     |           6 (0$)       |       7 (0$)      |
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+
+      |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (45$)|    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_45);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_45);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_45);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_45);
+
+      // Remove all current liquidity from the tree
+      await sTree.remove(TOKENS_45);
+      /*
+      +-----------------------------------------------------------------------------------------+
+      |                                          1 (0$)                                         |
+      +--------------------------------------------+--------------------------------------------+
+      |                      2 (0$)                |                      3 (0$)                |
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+
+      |           4 (0$)       |       5 (45$)     |           6 (0$)       |       7 (0$)      |
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+
+      |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (45$)|    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_45);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_45);
+
+      // Add another node so 'tree.updateId' propagates back to the root when we do a push
+      await sTree.nodeAddLiquidity(0);
+      await sTree.nodeWithdraw(12);
+
+      // Deposited 45 but removed from top and nothing to withdraw. This is 0 as we expect.
+      expect(await sTree.nodeWithdrawView(11)).to.be.equal(0);
+      /*
+      +-----------------------------------------------------------------------------------------+
+      |                                          1 (0$)                                         |
+      +--------------------------------------------+--------------------------------------------+
+      |                      2 (0$)                |                      3 (0$)                |
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+
+      |           4 (0$)       |       5 (45$)     |           6 (0$)       |       7 (0$)      |
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+
+      |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (45$)|    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_45);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_45);
+
+      // Withdraw 0 percent, this should do nothing, just updates (push) actual values from top to the leaf.
+      await sTree.nodeWithdrawPercent(11, 0);
+
+      /*
+      +-----------------------------------------------------------------------------------------+
+      |                                          1 (0$)                                         |
+      +--------------------------------------------+--------------------------------------------+
+      |                      2 (0$)                |                      3 (0$)                |
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+
+      |           4 (0$)       |       5 (0$)      |           6 (0$)       |       7 (0$)      |
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+
+      |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+      +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(0);
     });
   });
 });
