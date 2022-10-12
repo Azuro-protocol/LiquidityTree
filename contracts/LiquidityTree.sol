@@ -516,7 +516,7 @@ contract LiquidityTree {
      * @dev change amount by adding value or reducing value
      * @param node - node for changing
      * @param amount - amount value for changing
-     * @param isSub - true - reduce by amount, true - add by amount
+     * @param isSub - true - reduce by amount, false - add by amount
      * @param updateId_ - update number
      */
     function changeAmount(
