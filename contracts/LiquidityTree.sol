@@ -138,7 +138,9 @@ contract LiquidityTree {
         push(updatedNode, begin, end, leaf, ++updateId);
 
         // remove amount (percent of amount) from leaf to it's parents
-        withdrawAmount = (treeNode[leaf].amount * percent) / DECIMALS;
+        withdrawAmount = uint128(
+            (uint256(treeNode[leaf].amount) * percent) / DECIMALS
+        );
 
         updateUp(leaf, withdrawAmount, true, ++updateId);
 
