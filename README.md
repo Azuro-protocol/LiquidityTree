@@ -3,30 +3,29 @@
 This project demonstrates the "segment tree" approach for accounting additions and withdrawals liquidity and fair profit/loose distribution for bet (stake) protocol
 
 ## General concept
-A segment tree is a data structure that allows efficient finding and changing amounts in elements of the segment.
-The segment tree is used to account for provided liquidity.
-Each deposit is represented as a separate "leaf" element on the segment tree.
-Leaves are the outermost elements in the segment tree.
+A segment tree is a data structure that allows for efficient finding and changing of data in a range of elements.
+Each deposit is represented as a separate "leaf" element in the segment tree.
+Leaves are the most remote elements in the segment tree.
 
-Two leaves (left and right) are merged into one parent node. Two nodes (left and right) are merged into the parent node, and so on until the segment tree root.
-The segment tree root node has the most up-to-date value of the sum of its child elements (leaves).
-The root has no parent, and the leaves have no children.
+Two leaves (left and right) are combined into one parent node. Two nodes (left and right) are combined into an parent node and so on up to the single root of the entire segment tree.
+The root node of the segment tree represents the most up-to-date value of the sum of its child elements (leaves).
+The root has no parents, and the leaves have no children.
 
-In liquidity accounting, the root node contains the most updated current liquidity.
-Segment Tree named as Liquidity Tree
+The Liquidity Tree is a data structure used to track provided liquidity, based on a segment tree.
+In the task of liquidity accounting, the root node contains the most up-to-date liquidity value.
 
-## Liquidity tree representation
-All liquidity tree nodes are presented as array elements.
-To store data in **K** elements, you need an array of **K*2+1** elements.
-Element number **0** is not used, root node is number **1**, first leaf is number **K**
-Children of the root node: **2** - left child **3** - right child
+## Liquidity Tree Organization
+All Liquidity Tree nodes are stored as elements of an array.
+To store data in **K** elements, an array of size **K*2+1** is required.
+Element number **0** is not used, the root node has number **1**, and the first leaf has number **K**.
+The children of the root node are: **2** - left child **3** - right child
 
-Liquidity tree navigation is done by node number calculation:
-- left child of the node **X** has the number **2*X**
-- right child has the number **2*X+1**
+Navigation inside the Liquidity Tree is performed through the relation of node numbers:
+- The left child of node **X** has the number **2X**
+- The right child has the number **2X+1**.
   
 
-*4 elements liquidity tree example:*
+*Example of a Liquidity Tree for storing 4 elements:*
 ```shell
 +--------------------------------------------+
 |                  1 (top node)              |
@@ -38,18 +37,18 @@ Liquidity tree navigation is done by node number calculation:
 ```
 
 ## Adding liquidity
-With each liquidity addition, the following is done:
-1. initialization of the next leaf in order (next unused).
-2. adding the sum to the leaf's parent
-3. adding the sum to the parent ancestor and so on up to the liquidity tree root, recursively.
+Each time liquidity is added, the following steps are performed:
+1. Initialization of the next sequential leaf (the next unused one).
+2. Adding the sum to the parent of the leaf
+3. Adding the sum to the higher parent and so on up to the root of the Liquidity Tree, recursively.
    
-Method for adding liquidity: **```function nodeAddLiquidity(uint128 amount) public```**
+Method for adding liquidity: **```nodeAddLiquidity(uint128 amount)```**
 
-Thus, after adding, the **```amount```** will be added to the leaf and to all its parent nodes, including the root node.
-Leaf initialization can be done only once.
-In the future, leaf's amount can only change as a result of the distribution of profit / loss or the withdrawal of liquidity (total) from the leaf.
+Thus, after adding, the **```amount```** will be added to the leaf and all parent nodes, including the root node.
+Leaf initialization can only be done once.
+In the future, the amount in the leaf can only change as a result of profit/loss distribution or full liquidity withdrawal from the leaf.
 
-*Liquidity tree state after adding liquidity, updated nodes **4**, **5**, **2**, **1***
+*Example of the Liquidity Tree state after adding liquidity - nodes **4**, **5**, **2**, **1** have been updated:*
 
 ```shell
 nodeAddLiquidity(100$)
@@ -74,11 +73,11 @@ nodeAddLiquidity(200$)
 ```
 
 ## Taking liquidity for "game" reinforcement
-For "game" reinforcement, liquidity took according to liquidity tree current state: root node **1** current amount and for further fair distribution, you must "remember" the last initialized leaf.
-Liquidity is taken using method **```function remove(uint128 amount) public```**.
-The **```remove```** method uses "lazy updating" of child nodes so that if the updated list of leaves lies entirely in the parent node, then only this parent node is updated and further changes to child nodes are not made and postponed.
+For "game" reinforcement, liquidity took according to the current state of the Liquidity Tree: the current sum in the root node **1** and to ensure further fair distribution, it is necessary to "remember" the last relevant leaf.
+Taking liquidity occurs using the method **```remove(uint128 amount)```**.
+The **```remove```** method uses "lazy updating" of child nodes so that if the updated leaf list is completely within a parent node, only the parent node is updated and further changes to child nodes are not made and postponed.
 
-*Liquidity tree state that after taking liquidity for the "game" ($10), the nodes **1** and **2** have been updated, because the changes affect only the list of leaves [4, 5], and the entire list is included in the node **2**, you only need to update the sum of the node **1** and **2***
+*An example of the state of the Liquidity Tree after taking liquidity for "game" (10$), nodes **1** and **2** are updated, since the changes affect only the leaf list [4, 5], and the entire list is within node **2**, only the sum of nodes **1** and **2** needs to be updated:*
 
 ```shell
 remove(30$)
@@ -91,7 +90,7 @@ remove(30$)
 +-------------+----------+---------+---------+
 ```
 
-*after that, for example, liquidity was added (to the next leaf **6**), nodes **6**, **3**, **1*** were updated
+*After this, for example, liquidity was added (to the next leaf **6**), nodes **6**, **3**, **1** are updated.
 
 ```shell
 nodeAddLiquidity(300$)
@@ -105,11 +104,11 @@ nodeAddLiquidity(300$)
                             +300$
 ```
 
-## Return liquidity
-Made by passing the return amount and the leaf number, indicating the range of distribution of the returned amount from the first element to "leaf number" at the time of "taking liquidity".
-Called with **```function addLimit(uint128 amount, uint48 leaf) public```**
+## Returning liquidity
+It is done by specifying the amount to be returned and the leaf number indicating the range of the returned sum from the first element to the actual one at the time of "taking liquidity".
+It is performed using the method **```addLimit(uint128 amount, uint48 leaf)```**
 
-*In the example, nodes **4**, **5** firstly updated from previouse change (remove(30$)), then nodes **1**, **2** are updated. Amount in **4**, **5** not changed, because **4**, **5** enter node **2** and lazy update stopped at **2***
+*In the example, first nodes **4** and **5** are updated according to the previous change (remove(30$)), then nodes **1** and **2** are updated. The data in **4** and **5** does not change, because **4** and **5** are within node **2** and lazy updating stopped at **2**.*
 
 ```shell
 addLimit(15$, 5)
@@ -123,12 +122,12 @@ addLimit(15$, 5)
 +-------------+----------+---------+---------+
 ```
 
-## Liquidity withdrawal
-Called by **```function nodeWithdraw(uint48 leaf) public```**
+## Withdrawing liquidity
+It is done using the method **```nodeWithdraw(uint48 leaf)```**
 Under the hood:
-1. Search for "most updated parent" of the leaf
-2. leaf's amount value updating from the "most updated parent" (recursively from parent to child)
-3. full liquidity withdrawal from the leaf, updating all parent nodes from the leaf to the root node.
+1. Find the "most recently updated parent" from the leaf.
+2. Update (actualize) the data on the sum in the leaf from the "most recently updated parent", so that the sum in the leaf is updated.
+3. Then, the entire liquidity is withdrawn from the leaf, updating all parent nodes from the leaf to the root.
 
 ```shell
 nodeWithdraw(4) 
