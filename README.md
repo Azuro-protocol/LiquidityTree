@@ -126,7 +126,7 @@ addLimit(15$, 5)
 It is done using the method **```nodeWithdraw(uint48 leaf)```**
 Under the hood:
 1. Find the "most recently updated parent" from the leaf.
-2. Update (actualize) the data on the sum in the leaf from the "most recently updated parent", so that the sum in the leaf is updated.
+2. Update (actualize) the data on the sum in the leaf from the "most recently updated parent", so that the sum in the leaf is updated. (also updated leaves **4** and **5**).
 3. Then, the entire liquidity is withdrawn from the leaf, updating all parent nodes from the leaf to the root.
 
 ```shell
@@ -136,7 +136,7 @@ nodeWithdraw(4)
 +------------------------+-------------------+
 |         2 (190$)       |    3 (300$)       |
 +-------------+----------+---------+---------+
-|    4 (0$)   | 5 (200$) | 6 (300$)|    7    |
+|    4 (0$)   | 5 (190$) | 6 (300$)|    7    |
 +-------------+----------+---------+---------+
      -95$
 

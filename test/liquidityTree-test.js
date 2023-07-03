@@ -442,6 +442,73 @@ describe("LiquidityTree", () => {
       expect((await getNodeAmount(sTree, 23)).add(await getNodeAmount(sTree, 22))).to.be.equal(
         await getNodeAmount(sTree, 11)
       );
+      // check leaves total 17-23 amount equal top node
+      expect(await getNodeAmount(sTree, 1)).to.be.eq((await sTree.nodeWithdrawView(23))
+      .add(await sTree.nodeWithdrawView(22))
+      .add(await sTree.nodeWithdrawView(21))
+      .add(await sTree.nodeWithdrawView(20))
+      .add(await sTree.nodeWithdrawView(19))
+      .add(await sTree.nodeWithdrawView(18))
+      .add(await sTree.nodeWithdrawView(17))
+      .add(await sTree.nodeWithdrawView(16)));
+
+      //addLimit only for leaves [16-22], 23 not included
+      let node1amount = await getNodeAmount(sTree, 1);
+      let node4amount = await getNodeAmount(sTree, 4);
+      let node20amount = await sTree.nodeWithdrawView(20);
+      let node21amount = await sTree.nodeWithdrawView(21);
+      let node22amount = await sTree.nodeWithdrawView(22);
+      let node23amount = await sTree.nodeWithdrawView(23);
+      await sTree.addLimit(TOKENS_100, 20);
+
+      /*
+        Liquidity tree structure after addLimit(100, 22):
+        +----------------------------------------------------------------------------------------------------------------------+
+        |                                                             1(814.2857)                                              |
+        +------------------------------------------------------------------------------+---------------------------------------+
+        |                                2(814.2857)                                   |                   3                   |
+        +-------------------------------------+----------------------------------------+-------------------+-------------------+
+        |              4(307.1428)            |                5(407.1428)             |         6         |         7         |
+        +-------------------+-----------------+-----------------+----------------------+---------+---------+---------+---------+
+        |     8(85.71428)   |     9(171.4285) |    10(204.7619) |      11(202.3809)    |    12   |    13   |    14   |    15   |
+        +------+------------+--------+--------+--------+--------+-------------+--------+----+----+----+----+----+----+----+----+
+        | 16(0)| 17(85.7128)| 18(100)| 19(100)| 20(100)| 21(100)| 22(102.3809)| 23(100)| 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+        +------+------------+--------+--------+--------+--------+-------------+--------+----+----+----+----+----+----+----+----+
+                    100        100      100      100      100         100       100
+
+        2 changed 614.2857       -> 714.2857
+        4 changed 257.1428571429 -> 307.1428571429 by 50.00 
+        5 changed 357.1428571429 -> 407.1428571429 by 50.00 (because 357.1428 - 100 = 257.1428)
+        23 not changed because it is excluded by addLimit(TOKENS_100, 22)
+      */
+
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(node1amount.add(TOKENS_100));
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(node1amount.add(TOKENS_100));
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(node4amount.add(tokens(75)));
+      expect(await getNodeAmount(sTree, 20)).to.be.equal(node20amount.add(tokens(25)));
+      expect(await getNodeAmount(sTree, 21)).to.be.equal(node21amount);
+      expect(await getNodeAmount(sTree, 22)).to.be.equal(node22amount);
+      expect(await getNodeAmount(sTree, 23)).to.be.equal(TOKENS_100);
+
+      // checksum correctness node = left child + right child
+      expect((await getNodeAmount(sTree, 4)).add(await getNodeAmount(sTree, 5))).to.be.equal(
+        await getNodeAmount(sTree, 2)
+      );
+      expect((await getNodeAmount(sTree, 10)).add(await getNodeAmount(sTree, 11))).to.be.equal(
+        await getNodeAmount(sTree, 5)
+      );
+      expect((await getNodeAmount(sTree, 23)).add(await getNodeAmount(sTree, 22))).to.be.equal(
+        await getNodeAmount(sTree, 11)
+      );
+      // check leaves total 17-23 amount equal top node
+      expect(await getNodeAmount(sTree, 1)).to.be.eq((await sTree.nodeWithdrawView(23))
+      .add(await sTree.nodeWithdrawView(22))
+      .add(await sTree.nodeWithdrawView(21))
+      .add(await sTree.nodeWithdrawView(20))
+      .add(await sTree.nodeWithdrawView(19))
+      .add(await sTree.nodeWithdrawView(18))
+      .add(await sTree.nodeWithdrawView(17))
+      .add(await sTree.nodeWithdrawView(16)));
     });
     describe("7 interates with (add liquidity 100 and top remove 100), mixed addLimit", async () => {
       beforeEach(async () => {
