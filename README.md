@@ -77,7 +77,7 @@ For "game" reinforcement, liquidity took according to the current state of the L
 Taking liquidity occurs using the method **```remove(uint128 amount)```**.
 The **```remove```** method uses "lazy updating" of child nodes so that if the updated leaf list is completely within a parent node, only the parent node is updated and further changes to child nodes are not made and postponed.
 
-*An example of the state of the Liquidity Tree after taking liquidity for "game" (10$), nodes **1** and **2** are updated, since the changes affect only the leaf list [4, 5], and the entire list is within node **2**, only the sum of nodes **1** and **2** needs to be updated:*
+*An example of the state of the Liquidity Tree after taking liquidity for "game" (30$), nodes **1** and **2** are updated, since the changes affect only the leaf list [4, 5], and the entire list is within node **2**, only the sum of nodes **1** and **2** needs to be updated:*
 
 ```shell
 remove(30$)
