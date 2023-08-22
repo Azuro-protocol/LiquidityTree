@@ -450,68 +450,84 @@ contract LiquidityTree {
 
         uint48 mid = (begin + end) / 2;
 
-        if (begin <= l && l <= mid) {
-            if (begin <= r && r <= mid) {
-                // [l,r] in [begin,mid] - all leafs in left child
-                pushLazy(node * 2, begin, mid, l, r, amount, isSub, updateId_);
-            } else {
-                uint128 lAmount = treeNode[node * 2].amount;
-                // get right amount excluding unused leaves when adding amounts
-                uint128 rAmount = treeNode[node * 2 + 1].amount -
-                    (
-                        !isSub
-                            ? getLeavesAmount(
-                                node * 2 + 1,
-                                mid + 1,
-                                end,
-                                r + 1,
-                                end
-                            )
-                            : 0
+        // if reducing and left node is insufficient in funds run mid scenario (left+right) without excluding
+        if (isSub && treeNode[node * 2].amount < amount) {
+            r = getRightLeaf(node * 2);
+            pushLazy(node * 2, begin, mid, r, r, amount, isSub, updateId_);
+        } else {
+            if (begin <= l && l <= mid) {
+                if (begin <= r && r <= mid) {
+                    // [l,r] in [begin,mid] - all leafs in left child
+                    pushLazy(
+                        node * 2,
+                        begin,
+                        mid,
+                        l,
+                        r,
+                        amount,
+                        isSub,
+                        updateId_
                     );
-                uint128 sumAmounts = lAmount + rAmount;
-                if (sumAmounts == 0) return;
-                uint128 forLeftAmount = uint128(
-                    (amount * ((uint256(lAmount) * DECIMALS) / sumAmounts)) /
-                        DECIMALS
-                );
+                } else {
+                    uint128 lAmount = treeNode[node * 2].amount;
+                    // get right amount excluding unused leaves when adding amounts
+                    uint128 rAmount = treeNode[node * 2 + 1].amount -
+                        (
+                            !isSub
+                                ? getLeavesAmount(
+                                    node * 2 + 1,
+                                    mid + 1,
+                                    end,
+                                    r + 1,
+                                    end
+                                )
+                                : 0
+                        );
+                    uint128 sumAmounts = lAmount + rAmount;
+                    if (sumAmounts == 0) return;
+                    uint128 forLeftAmount = uint128(
+                        (amount *
+                            ((uint256(lAmount) * DECIMALS) / sumAmounts)) /
+                            DECIMALS
+                    );
 
-                // l in [begin,mid] - part in left child
-                pushLazy(
-                    node * 2,
-                    begin,
-                    mid,
-                    l,
-                    mid,
-                    forLeftAmount,
-                    isSub,
-                    updateId_
-                );
+                    // l in [begin,mid] - part in left child
+                    pushLazy(
+                        node * 2,
+                        begin,
+                        mid,
+                        l,
+                        mid,
+                        forLeftAmount,
+                        isSub,
+                        updateId_
+                    );
 
-                // r in [mid+1,end] - part in right child
+                    // r in [mid+1,end] - part in right child
+                    pushLazy(
+                        node * 2 + 1,
+                        mid + 1,
+                        end,
+                        mid + 1,
+                        r,
+                        amount - forLeftAmount,
+                        isSub,
+                        updateId_
+                    );
+                }
+            } else {
+                // [l,r] in [mid+1,end] - all leafs in right child
                 pushLazy(
                     node * 2 + 1,
                     mid + 1,
                     end,
-                    mid + 1,
+                    l,
                     r,
-                    amount - forLeftAmount,
+                    amount,
                     isSub,
                     updateId_
                 );
             }
-        } else {
-            // [l,r] in [mid+1,end] - all leafs in right child
-            pushLazy(
-                node * 2 + 1,
-                mid + 1,
-                end,
-                l,
-                r,
-                amount,
-                isSub,
-                updateId_
-            );
         }
         changeAmount(node, amount, isSub, updateId_);
     }
@@ -531,7 +547,8 @@ contract LiquidityTree {
     ) internal {
         treeNode[node].updateId = updateId_;
         if (isSub) {
-            treeNode[node].amount -= amount;
+            if (treeNode[node].amount >= amount)
+                treeNode[node].amount -= amount;
         } else {
             treeNode[node].amount += amount;
         }
@@ -612,5 +629,10 @@ contract LiquidityTree {
         }
 
         return amount;
+    }
+
+    function getRightLeaf(uint48 node) internal view returns (uint48 leaf) {
+        if (node >= LIQUIDITYNODES) return node; // leaves level reached
+        return getRightLeaf(node * 2 + 1);
     }
 }
