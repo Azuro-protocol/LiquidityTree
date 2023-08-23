@@ -450,10 +450,14 @@ contract LiquidityTree {
 
         uint48 mid = (begin + end) / 2;
 
-        // if reducing and left node is insufficient in funds run mid scenario (left+right) without excluding
+        // if reducing and left node is insufficient in funds run mid scenario (left+right) without excluding        
         if (isSub && treeNode[node * 2].amount < amount) {
-            r = getRightLeaf(node * 2);
-            pushLazy(node * 2, begin, mid, r, r, amount, isSub, updateId_);
+            uint128 leftAmount = treeNode[node * 2].amount;
+            r = getRightLeaf(node);
+            // get all from the left
+            pushLazy(node * 2, begin, mid, l, r, leftAmount, isSub, updateId_);
+            // and rest from the right
+            pushLazy(node * 2 + 1, begin, mid, l, r, amount - leftAmount, isSub, updateId_);
         } else {
             if (begin <= l && l <= mid) {
                 if (begin <= r && r <= mid) {
