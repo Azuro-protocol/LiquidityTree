@@ -695,7 +695,7 @@ describe("LiquidityTree", () => {
     beforeEach(async () => {
       sTree = await prepareTree(ethers, SMALL_TREE_LEAFS);
     });
-    it("add liquidity to 2 leafs, withdraw first leaf, removeLimit first", async () => {
+    it.only("add liquidity to 2 leafs, withdraw first leaf, removeLimit first", async () => {
       for (const i of Array(2).keys()) {
         await sTree.nodeAddLiquidity(TOKENS_10);
       }
@@ -834,6 +834,281 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 17, TOKENS_10);
 
       expect(await sTree.nodeWithdrawView(17)).to.be.eq(ZERO);
+    });
+    it.only("add liquidity to 4 leafs, withdraw first 2 leaf, removeLimit first 2 leaves", async () => {
+      for (const i of Array(4).keys()) {
+        await sTree.nodeAddLiquidity(TOKENS_10);
+      }
+      /*
+        Liquidity tree structure after nodeAddLiquidity:
+        +---------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                     1(40)                                                                   |
+        +-----------------------------------------------------------------------+---------------------------------------------------------------------+
+        |                                  2(40)                                |                                       3                             |
+        +-----------------------------------+---------------+-----------------------------------------------------------+-----------------------------+
+        |              4(40)                |                 5                 |                   6                   |                   7         |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
+        |     8(20)       |        9(20)    |       10        |       11        |        12         |        13         |        14         |    15   |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
+        | 16(10) | 17(10) | 18(10) | 19(10) |    20  |    21  |    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+ 
+      */
+
+      await checkNodeAmountTo(sTree, 1, TOKENS_40);
+      await checkNodeAmountTo(sTree, 2, TOKENS_40);
+      await checkNodeAmountTo(sTree, 3, ZERO);
+      await checkNodeAmountTo(sTree, 4, TOKENS_40);
+      await checkNodeAmountTo(sTree, 5, ZERO);
+      await checkNodeAmountTo(sTree, 6, ZERO);
+      await checkNodeAmountTo(sTree, 7, ZERO);
+      await checkNodeAmountTo(sTree, 8, TOKENS_20);
+      await checkNodeAmountTo(sTree, 9, TOKENS_20);
+      await checkNodeAmountTo(sTree, 10, ZERO);
+      await checkNodeAmountTo(sTree, 11, ZERO);
+      await checkNodeAmountTo(sTree, 12, ZERO);
+      await checkNodeAmountTo(sTree, 13, ZERO);
+      await checkNodeAmountTo(sTree, 14, ZERO);
+      await checkNodeAmountTo(sTree, 16, TOKENS_10);
+      await checkNodeAmountTo(sTree, 17, TOKENS_10);
+      await checkNodeAmountTo(sTree, 18, TOKENS_10);
+      await checkNodeAmountTo(sTree, 19, TOKENS_10);
+
+      // withdraw first 2 leaves
+      await sTree.nodeWithdraw(16);
+      await sTree.nodeWithdraw(17);
+      /*
+        Liquidity tree structure after nodeWithdraw:
+        +---------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                     1(20)                                                                   |
+        +-----------------------------------------------------------------------+---------------------------------------------------------------------+
+        |                                  2(20)                                |                                       3                             |
+        +-----------------------------------+---------------+-----------------------------------------------------------+-----------------------------+
+        |              4(20)                |                 5                 |                   6                   |                   7         |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
+        |     8(0)        |        9(20)    |       10        |       11        |        12         |        13         |        14         |    15   |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
+        | 16(0)  | 17(0)  | 18(10) | 19(10) |    20  |    21  |    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+ 
+      */
+
+      await checkNodeAmountTo(sTree, 1, TOKENS_20);
+      await checkNodeAmountTo(sTree, 2, TOKENS_20);
+      await checkNodeAmountTo(sTree, 3, ZERO);
+      await checkNodeAmountTo(sTree, 4, TOKENS_20);
+      await checkNodeAmountTo(sTree, 5, ZERO);
+      await checkNodeAmountTo(sTree, 6, ZERO);
+      await checkNodeAmountTo(sTree, 7, ZERO);
+      await checkNodeAmountTo(sTree, 8, ZERO);
+      await checkNodeAmountTo(sTree, 9, TOKENS_20);
+      await checkNodeAmountTo(sTree, 10, ZERO);
+      await checkNodeAmountTo(sTree, 11, ZERO);
+      await checkNodeAmountTo(sTree, 12, ZERO);
+      await checkNodeAmountTo(sTree, 13, ZERO);
+      await checkNodeAmountTo(sTree, 14, ZERO);
+      await checkNodeAmountTo(sTree, 16, ZERO);
+      await checkNodeAmountTo(sTree, 17, ZERO);
+      await checkNodeAmountTo(sTree, 18, TOKENS_10);
+      await checkNodeAmountTo(sTree, 19, TOKENS_10);
+
+      // remove limit with first leaf. Leaf is emty, removing from right leaf's branch
+      await sTree.removeLimit(tokens(10), 17);
+            /*
+        Liquidity tree structure after removeLimit:
+        +---------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                     1(10)                                                                   |
+        +-----------------------------------------------------------------------+---------------------------------------------------------------------+
+        |                                  2(10)                                |                                       3                             |
+        +-----------------------------------+---------------+-----------------------------------------------------------+-----------------------------+
+        |              4(10)                |                 5                 |                   6                   |                   7         |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
+        |     8(0)        |        9(20)    |       10        |       11        |        12         |        13         |        14         |    15   |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
+        | 16(0)  | 17(0)  | 18(10) | 19(10) |    20  |    21  |    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+ 
+      */
+
+      await checkNodeAmountTo(sTree, 1, TOKENS_10);
+      await checkNodeAmountTo(sTree, 2, TOKENS_10);
+      await checkNodeAmountTo(sTree, 3, ZERO);
+      await checkNodeAmountTo(sTree, 4, TOKENS_10);
+      await checkNodeAmountTo(sTree, 5, ZERO);
+      await checkNodeAmountTo(sTree, 6, ZERO);
+      await checkNodeAmountTo(sTree, 7, ZERO);
+      await checkNodeAmountTo(sTree, 8, ZERO);
+      await checkNodeAmountTo(sTree, 9, TOKENS_20);
+      await checkNodeAmountTo(sTree, 10, ZERO);
+      await checkNodeAmountTo(sTree, 11, ZERO);
+      await checkNodeAmountTo(sTree, 12, ZERO);
+      await checkNodeAmountTo(sTree, 13, ZERO);
+      await checkNodeAmountTo(sTree, 14, ZERO);
+      await checkNodeAmountTo(sTree, 16, ZERO);
+      await checkNodeAmountTo(sTree, 17, ZERO);
+      await checkNodeAmountTo(sTree, 18, TOKENS_10);
+      await checkNodeAmountTo(sTree, 19, TOKENS_10);
+      
+      expect(await sTree.nodeWithdrawView(17)).to.be.eq(ZERO);
+      expect(await sTree.nodeWithdrawView(18)).to.be.eq(TOKENS_5);
+      expect(await sTree.nodeWithdrawView(19)).to.be.eq(TOKENS_5);
+
+      // withdraw all liquidity, tree zeroed
+      await sTree.nodeWithdraw(18);
+      await sTree.nodeWithdraw(19);
+
+      for (const i of Array(32).keys()) {
+        await checkNodeAmountTo(sTree, i+1, ZERO);
+      }
+    });
+    it("add liquidity to 22 leafs, top add 100, withdraw leaf", async () => {
+      for (const i of Array(14).keys()) {
+        await sTree.nodeAddLiquidity(TOKENS_100);
+      }
+      /*
+        Liquidity tree structure after nodeAddLiquidity:
+        +---------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                    1(1400)                                                                  |
+        +-----------------------------------------------------------------------+---------------------------------------------------------------------+
+        |                                2(800)                                 |                                   3(600)                            |
+        +-----------------------------------+---------------+-----------------------------------------------------------+-----------------------------+
+        |              4(400)               |              5(400)               |                 6(400)                |                 7(200)      |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
+        |     8(200)      |     9(200)      |    10(200)      |    11(200)      |      12(200)      |       13(200)     |       14(200)     |    15   |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
+        | 16(100)| 17(100)| 18(100)| 19(100)| 20(100)| 21(100)| 22(100)| 23(100)| 24(100) | 25(100) | 26(100) | 27(100) | 28(100) | 29(100) | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
+            100    100        100      100      100      100      100      100       100      100       100        100      100      100
+      */
+
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(1400));
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(800));
+      expect(await getNodeAmount(sTree, 3)).to.be.equal(tokens(600));
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(400));
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(tokens(400));
+      expect(await getNodeAmount(sTree, 7)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 12)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 13)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 14)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 16)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 17)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 18)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 19)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 20)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 21)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 22)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 23)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 24)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 25)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 26)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 27)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 28)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 29)).to.be.equal(TOKENS_100);
+
+      // withdraw part of nodes
+      await sTree.nodeWithdraw(21);
+      await sTree.nodeWithdraw(22);
+      await sTree.nodeWithdraw(23);
+      await sTree.nodeWithdraw(24);
+      await sTree.nodeWithdraw(25);
+      await sTree.nodeWithdraw(28);
+      await sTree.nodeWithdraw(29);
+
+      /*
+        Liquidity tree structure after nodeAddLiquidity:
+        +---------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                    1(700)                                                                   |
+        +-----------------------------------------------------------------------+---------------------------------------------------------------------+
+        |                                2(500)                                 |                                       3(200)                        |
+        +-----------------------------------+---------------+-----------------------------------------------------------+-----------------------------+
+        |              4(400)               |              5(100)               |                 6(200)                |              7(0)           |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
+        |     8(200)      |     9(200)      |    10(100)      |      11(0)      |        12(0)      |       13(200)     |        14(0)      |    15   |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
+        | 16(100)| 17(100)| 18(100)| 19(100)| 20(100)| 21(0)  | 22(0)  | 23(0)  | 24(0)   | 25(0)   | 26(100) | 27(100) |   28(0) | 29(0)   | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
+            100    100        100      100      100                                                      100      100                 
+      */
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(700));
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(500));
+      expect(await getNodeAmount(sTree, 3)).to.be.equal(tokens(200));
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(100));
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(tokens(200));
+      expect(await getNodeAmount(sTree, 7)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 12)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 13)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 14)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 16)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 17)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 18)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 19)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 20)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 21)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 22)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 23)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 24)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 25)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 26)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 27)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 28)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 29)).to.be.equal(0);
+
+      // remove 1
+      await sTree.remove(tokens(1));
+
+      /*
+        Liquidity tree structure after nodeAddLiquidity:
+        +-----------------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                    1(699)                                                                           |
+        +-----------------------------------------------------------------------+-----------------------------------------------------------------------------+
+        |                                2(499.285)                             |                                   3(199.714285714285)                       |
+        +-----------------------------------+---------------+-----------------------------------------------------------+-------------------------------------+
+        |              4(400)               |              5(100)               |          6(199.714285714285)          |               7(0)                  |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+---------------------------+---------+
+        |     8(200)      |     9(200)      |    10(100)      |      11(0)      |        12(0)      |       13(200)     |             14(0)         |    15   |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+--------------+------------+----+----+
+        | 16(100)| 17(100)| 18(100)| 19(100)| 20(100)| 21(0)  | 22(0)  | 23(0)  | 24(0)   | 25(0)   | 26(100) | 27(100) |      28(0)   |    29(0)   | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+--------------+------------+----+----+
+            100    100        100      100      100                                                      100      100                         
+      */
+
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(699));
+      expect(await getNodeAmount(sTree, 2)).to.be.equal("499285714285715000000");
+      expect(await getNodeAmount(sTree, 3)).to.be.equal("199714285714285000000");
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(100));
+      expect(await getNodeAmount(sTree, 6)).to.be.equal("199714285714285000000");
+      expect(await getNodeAmount(sTree, 7)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 12)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 13)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 14)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 16)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 17)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 18)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 19)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 20)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 21)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 22)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 23)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 24)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 25)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 26)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 27)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 28)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 29)).to.be.equal(0);
+
+      expect(await sTree.nodeWithdrawView(20)).to.be.equal("99857142857143000000");
     });
     it("add liquidity to 22 leafs, top add 100, withdraw leaf", async () => {
       for (const i of Array(14).keys()) {
