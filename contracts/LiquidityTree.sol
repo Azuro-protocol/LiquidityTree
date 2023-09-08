@@ -450,14 +450,33 @@ contract LiquidityTree {
 
         uint48 mid = (begin + end) / 2;
 
-        // if reducing and left node is insufficient in funds run mid scenario (left+right) without excluding        
-        if (isSub && treeNode[node * 2].amount < amount) {
-            uint128 leftAmount = treeNode[node * 2].amount;
-            r = getRightLeaf(node);
+        // if reducing and left node is insufficient in funds
+        // of increasing and left node is ZERO run push scenario (left+right) without excluding for [begin, r] leaves
+        if (
+            (isSub && treeNode[node * 2].amount < amount) ||
+            (!isSub && treeNode[node * 2].amount == 0)
+        ) {
+            uint256 leftAmount = treeNode[node * 2].amount;
+            r = _getRightLeaf(node);
+            uint256 sumAmounts = leftAmount + treeNode[node * 2 + 1].amount;
+
+            if (sumAmounts == 0) return;
+            uint128 forLeftAmount = uint128(
+                (amount * ((leftAmount * DECIMALS) / sumAmounts)) / DECIMALS
+            );
             // get all from the left
-            pushLazy(node * 2, begin, mid, l, r, leftAmount, isSub, updateId_);
+            pushLazy(node * 2, begin, r, l, r, forLeftAmount, isSub, updateId_);
             // and rest from the right
-            pushLazy(node * 2 + 1, begin, mid, l, r, amount - leftAmount, isSub, updateId_);
+            pushLazy(
+                node * 2 + 1,
+                begin,
+                r,
+                l,
+                r,
+                amount - forLeftAmount,
+                isSub,
+                updateId_
+            );
         } else {
             if (begin <= l && l <= mid) {
                 if (begin <= r && r <= mid) {
@@ -487,7 +506,7 @@ contract LiquidityTree {
                                 )
                                 : 0
                         );
-                    uint128 sumAmounts = lAmount + rAmount;
+                    uint256 sumAmounts = lAmount + rAmount;
                     if (sumAmounts == 0) return;
                     uint128 forLeftAmount = uint128(
                         (amount *
@@ -635,8 +654,8 @@ contract LiquidityTree {
         return amount;
     }
 
-    function getRightLeaf(uint48 node) internal view returns (uint48 leaf) {
+    function _getRightLeaf(uint48 node) internal view returns (uint48) {
         if (node >= LIQUIDITYNODES) return node; // leaves level reached
-        return getRightLeaf(node * 2 + 1);
+        return _getRightLeaf(node * 2 + 1);
     }
 }
