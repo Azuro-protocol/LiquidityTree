@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity 0.8.16;
 
 contract LiquidityTree {
     struct Node {
@@ -479,25 +479,14 @@ contract LiquidityTree {
                 // [l,r] in [begin,mid] - all leafs in left child
                 pushLazy(node * 2, begin, mid, l, r, amount, isSub, updateId_);
             } else {
-                uint128 lAmount = treeNode[node * 2].amount;
-                // get right amount excluding unused leaves when adding amounts
-                uint128 rAmount = treeNode[node * 2 + 1].amount -
-                    (
-                        !isSub
-                            ? getLeavesAmount(
-                                node * 2 + 1,
-                                mid + 1,
-                                end,
-                                r + 1,
-                                end
-                            )
-                            : 0
-                    );
+                uint256 lAmount = treeNode[node * 2].amount;
+                // get right amount excluding unused leaves
+                uint256 rAmount = treeNode[node * 2 + 1].amount -
+                    getLeavesAmount(node * 2 + 1, mid + 1, end, r + 1, end);
                 uint256 sumAmounts = lAmount + rAmount;
                 if (sumAmounts == 0) return;
                 uint128 forLeftAmount = uint128(
-                    (amount * ((uint256(lAmount) * DECIMALS) / sumAmounts)) /
-                        DECIMALS
+                    ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
                 );
 
                 // l in [begin,mid] - part in left child
@@ -581,25 +570,14 @@ contract LiquidityTree {
                 if (pushLazyPreview(node * 2, begin, mid, l, r, amount, isSub))
                     return true;
             } else {
-                uint128 lAmount = treeNode[node * 2].amount;
-                // get right amount excluding unused leaves when adding amounts
-                uint128 rAmount = treeNode[node * 2 + 1].amount -
-                    (
-                        !isSub
-                            ? getLeavesAmount(
-                                node * 2 + 1,
-                                mid + 1,
-                                end,
-                                r + 1,
-                                end
-                            )
-                            : 0
-                    );
+                uint256 lAmount = treeNode[node * 2].amount;
+                // get right amount excluding unused leaves
+                uint256 rAmount = treeNode[node * 2 + 1].amount -
+                    getLeavesAmount(node * 2 + 1, mid + 1, end, r + 1, end);
                 uint256 sumAmounts = lAmount + rAmount;
                 if (sumAmounts == 0) return true;
                 uint128 forLeftAmount = uint128(
-                    (amount * ((uint256(lAmount) * DECIMALS) / sumAmounts)) /
-                        DECIMALS
+                    ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
                 );
 
                 // l in [begin,mid] - part in left child
