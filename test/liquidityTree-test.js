@@ -10,6 +10,7 @@ const TOKENS_200 = tokens(200);
 const TOKENS_190 = tokens(190);
 const TOKENS_100 = tokens(100);
 const TOKENS_80 = tokens(80);
+const TOKENS_60 = tokens(60);
 const TOKENS_50 = tokens(50);
 const TOKENS_45 = tokens(45);
 const TOKENS_40 = tokens(40);
@@ -708,7 +709,6 @@ describe("LiquidityTree", () => {
         expect(await getWithdrawnAmount(await sTree.nodeWithdraw(17))).to.be.equal(withdrawView17); // "99651550720354253159");
         expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal(withdrawView18); // "99753694581280000000");
       });
-
       it("reverse addings", async () => {
         await sTree.addLimit(tokens(10), 18);
         /*
@@ -1476,6 +1476,143 @@ describe("LiquidityTree", () => {
 
       for (const i of Array(16).keys()) await sTree.nodeWithdraw(i + 16);
 
+      await checkTreeIsEmpty(sTree);
+    });
+    it("add liquidity to 16 leafs, addLimit for zeroed leaves (left subtree), affected all non zero leaves", async () => {
+      for (const i of Array(16).keys()) await sTree.nodeAddLiquidity(TOKENS_10);
+      for (const i of Array(7).keys()) await sTree.nodeWithdraw(i + 16);
+      /*
+        Liquidity tree structure after nodeAddLiquidity and removed #16 - #22:
+        +-----------------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                   1(90)                                                                            |
+        +-----------------------------------------------------------------------+-----------------------------------------------------------------------------+
+        |                                  2(10)                                |                                     3(80)                                   |
+        +-----------------------------------+-----------------------------------+---------------------------------------+-------------------------------------+
+        |               4(0)                |              5(10)                |                 6(40)                 |                 7(40)               |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+-----------------+
+        |      8(0)       |       9(0)      |     10(0)       |     11(10)      |      12(20)       |      13(20)       |      14(20)       |      15(20)     |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+
+        | 16(0)  | 17(0)  |  18(0) | 19(0)  | 20(0)  |  21(0) |  22(0) | 23(10) |  24(10) |  25(10) |  26(10) |  27(10) | 28(10)  | 29(10)  | 30(10) | 31(10) |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+ 
+      */
+
+      await checkNodeAmountTo(sTree, 1, tokens(90));
+      await checkNodeAmountTo(sTree, 2, TOKENS_10);
+      await checkNodeAmountTo(sTree, 3, TOKENS_80);
+      await checkNodeAmountTo(sTree, 4, ZERO);
+      await checkNodeAmountTo(sTree, 5, TOKENS_10);
+      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 6, TOKENS_40);
+      for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 8, ZERO);
+      await checkNodeAmountTo(sTree, 11, TOKENS_10);
+      for (const i of Array(4).keys()) await checkNodeAmountTo(sTree, i + 12, TOKENS_20);
+      for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 16, ZERO);
+      for (const i of Array(9).keys()) await checkNodeAmountTo(sTree, i + 23, TOKENS_10);
+
+      await sTree.addLimit(tokens(90), 22);
+      /*
+        Liquidity tree structure after addLimit to zeroed #22, add to all tree:
+        +-----------------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                   1(180)                                                                            |
+        +-----------------------------------------------------------------------+-----------------------------------------------------------------------------+
+        |                                  2(10)                                |                                     3(80)                                   |
+        +-----------------------------------+-----------------------------------+---------------------------------------+-------------------------------------+
+        |               4(0)                |              5(10)                |                 6(40)                 |                 7(40)               |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+-----------------+
+        |      8(0)       |       9(0)      |     10(0)       |     11(10)      |      12(20)       |      13(20)       |      14(20)       |      15(20)     |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+
+        | 16(0)  | 17(0)  |  18(0) | 19(0)  | 20(0)  |  21(0) |  22(0) | 23(10) |  24(10) |  25(10) |  26(10) |  27(10) | 28(10)  | 29(10)  | 30(10) | 31(10) |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+
+      */
+      await checkNodeAmountTo(sTree, 1, tokens(180));
+      // All rest nodes unchanged because of lazy (update stoped at #1)
+      await checkNodeAmountTo(sTree, 2, TOKENS_10);
+      await checkNodeAmountTo(sTree, 3, TOKENS_80);
+      await checkNodeAmountTo(sTree, 4, ZERO);
+      await checkNodeAmountTo(sTree, 5, TOKENS_10);
+      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 6, TOKENS_40);
+      for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 8, ZERO);
+      await checkNodeAmountTo(sTree, 11, TOKENS_10);
+      for (const i of Array(4).keys()) await checkNodeAmountTo(sTree, i + 12, TOKENS_20);
+      for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 16, ZERO);
+      for (const i of Array(9).keys()) await checkNodeAmountTo(sTree, i + 23, TOKENS_10);
+
+      for (const i of Array(7).keys()) expect(await sTree.nodeWithdrawView(i + 16)).to.be.eq(ZERO); //not distributed on zero values
+      for (const i of Array(9).keys()) expect(await sTree.nodeWithdrawView(i + 23)).to.be.eq(TOKENS_20); //10 + 10 for every leaf from #23
+
+      // withdraw all and check tree zeroed
+      for (const i of Array(9).keys()) await sTree.nodeWithdraw(i + 23);
+      await checkTreeIsEmpty(sTree);
+    });
+    it("add liquidity to 15 leafs, addLimit for zeroed leaves (right subtree), affected all non zero leaves", async () => {
+      for (const i of Array(15).keys()) await sTree.nodeAddLiquidity(TOKENS_10);
+      for (const i of Array(9).keys()) await sTree.nodeWithdraw(i + 16);
+      /*
+        Liquidity tree structure after nodeAddLiquidity and removed #16 - #24:
+        +-----------------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                    1(60)                                                                            |
+        +-----------------------------------------------------------------------+-----------------------------------------------------------------------------+
+        |                                   2(0)                                |                                     3(60)                                   |
+        +-----------------------------------+-----------------------------------+---------------------------------------+-------------------------------------+
+        |               4(0)                |               5(0)                |                 6(30)                 |                 7(30)               |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+-----------------+
+        |      8(0)       |       9(0)      |     10(0)       |      11(0)      |      12(10)       |      13(20)       |      14(20)       |      15(10)     |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+
+        | 16(0)  | 17(0)  |  18(0) | 19(0)  | 20(0)  |  21(0) |  22(0) |  23(0) |  24(0)  |  25(10) |  26(10) |  27(10) | 28(10)  | 29(10)  | 30(10) | 31(0)  |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+ 
+      */
+
+      await checkNodeAmountTo(sTree, 1, tokens(60));
+      await checkNodeAmountTo(sTree, 2, ZERO);
+      await checkNodeAmountTo(sTree, 3, TOKENS_60);
+      await checkNodeAmountTo(sTree, 4, ZERO);
+      await checkNodeAmountTo(sTree, 5, ZERO);
+      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 6, TOKENS_30);
+      for (const i of Array(4).keys()) await checkNodeAmountTo(sTree, i + 8, ZERO);
+      await checkNodeAmountTo(sTree, 12, TOKENS_10);
+      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 13, TOKENS_20);
+      await checkNodeAmountTo(sTree, 15, TOKENS_10);
+      for (const i of Array(9).keys()) await checkNodeAmountTo(sTree, i + 16, ZERO);
+      for (const i of Array(6).keys()) await checkNodeAmountTo(sTree, i + 25, TOKENS_10);
+      await checkNodeAmountTo(sTree, 31, ZERO);
+
+      await sTree.addLimit(tokens(60), 24);
+      /*
+        Liquidity tree structure after nodeAddLiquidity and removed #16 - #24:
+        +-----------------------------------------------------------------------------------------------------------------------------------------------------+
+        |                                                                    1(120)                                                                           |
+        +-----------------------------------------------------------------------+-----------------------------------------------------------------------------+
+        |                                   2(0)                                |                                     3(120)                                  |
+        +-----------------------------------+-----------------------------------+---------------------------------------+-------------------------------------+
+        |               4(0)                |               5(0)                |                 6(60)                 |                 7(60)               |
+        +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+-----------------+
+        |      8(0)       |       9(0)      |     10(0)       |      11(0)      |      12(10)       |      13(20)       |      14(40)       |      15(20)     |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+
+        | 16(0)  | 17(0)  |  18(0) | 19(0)  | 20(0)  |  21(0) |  22(0) |  23(0) |  24(0)  |  25(20) |  26(10) |  27(10) | 28(10)  | 29(10)  | 30(20) | 31(0)  |
+        +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+ 
+      */
+      await checkNodeAmountTo(sTree, 1, tokens(120));
+      await checkNodeAmountTo(sTree, 2, ZERO);
+      await checkNodeAmountTo(sTree, 3, tokens(120));
+      await checkNodeAmountTo(sTree, 4, ZERO);
+      await checkNodeAmountTo(sTree, 5, ZERO);
+      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 6, TOKENS_60);
+      for (const i of Array(4).keys()) await checkNodeAmountTo(sTree, i + 8, ZERO);
+      // All #6 child nodes not changed (lazy)
+      await checkNodeAmountTo(sTree, 12, TOKENS_10);
+      await checkNodeAmountTo(sTree, 13, TOKENS_20);
+      // Part of child nodes changed
+      await checkNodeAmountTo(sTree, 14, TOKENS_40);
+      await checkNodeAmountTo(sTree, 15, TOKENS_20);
+      for (const i of Array(9).keys()) await checkNodeAmountTo(sTree, i + 16, ZERO);
+      for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 25, TOKENS_10);
+      await checkNodeAmountTo(sTree, 30, TOKENS_20);
+      await checkNodeAmountTo(sTree, 31, ZERO);
+
+      // All add distributed to non zero leaves
+      for (const i of Array(6).keys()) expect(await sTree.nodeWithdrawView(i + 25)).to.be.eq(TOKENS_20);
+
+      // withdraw all and check tree zeroed
+      for (const i of Array(6).keys()) await sTree.nodeWithdraw(i + 25);
       await checkTreeIsEmpty(sTree);
     });
     it("add liquidity to 22 leafs, top add 100, withdraw leaf", async () => {
