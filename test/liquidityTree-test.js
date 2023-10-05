@@ -6,9 +6,11 @@ const { tokens, getNodeAmount, prepareTree, getWithdrawnAmount } = require("../u
 
 const TOKENS_300 = tokens(300);
 const TOKENS_270 = tokens(270);
+const TOKENS_400 = tokens(400);
 const TOKENS_200 = tokens(200);
 const TOKENS_190 = tokens(190);
 const TOKENS_100 = tokens(100);
+const TOKENS_90 = tokens(90);
 const TOKENS_80 = tokens(80);
 const TOKENS_60 = tokens(60);
 const TOKENS_50 = tokens(50);
@@ -25,6 +27,7 @@ const SMALL_TREE_LEAFS = 16;
 const MIDDLE_TREE_LEAFS = 8;
 const TINY_TREE_LEAFS = 2;
 const EXAMPLE_TREE_LEAFS = 4;
+const WITHDRAW_50_PERCENT = 500000000000;
 const WITHDRAW_100_PERCENT = 10 ** 12;
 
 const checkTreeIsEmpty = async (sTree) => {
@@ -79,26 +82,26 @@ describe("LiquidityTree", () => {
           await sTree.addLimit(tokens(10), (await sTree.nextNode()) - 1);
           await sTree.nodeAddLiquidity(tokens(1));
           await sTree.addLimit(tokens(10), (await sTree.nextNode()) - 1);
-          await sTree.nodeWithdrawPercent((await sTree.nextNode()) - 1, 500000000000); // 50%
+          await sTree.nodeWithdrawPercent((await sTree.nextNode()) - 1, WITHDRAW_50_PERCENT); // 50%
           await sTree.addLimit(tokens(10), (await sTree.nextNode()) - 1);
         }
       }
 
       for (const iterator of Array(39).keys()) {
         await sTree.nodeAddLiquidity(tokens(1));
-        await sTree.nodeWithdrawPercent((await sTree.nextNode()) - 1, 1000000000000); // 100%
+        await sTree.nodeWithdrawPercent((await sTree.nextNode()) - 1, WITHDRAW_100_PERCENT); // 100%
       }
       await sTree.remove(tokens(1000));
 
       for (const iterator of Array(19).keys()) {
         await sTree.nodeAddLiquidity(tokens(1));
-        await sTree.nodeWithdrawPercent((await sTree.nextNode()) - 1, 1000000000000); // 100%
+        await sTree.nodeWithdrawPercent((await sTree.nextNode()) - 1, WITHDRAW_100_PERCENT); // 100%
       }
       await sTree.remove(tokens(1000));
 
       for (const iterator of Array(9).keys()) {
         await sTree.nodeAddLiquidity(tokens(1));
-        await sTree.nodeWithdrawPercent((await sTree.nextNode()) - 1, 1000000000000); // 100%
+        await sTree.nodeWithdrawPercent((await sTree.nextNode()) - 1, WITHDRAW_100_PERCENT); // 100%
       }
       await sTree.remove(tokens(1000));
       await sTree.removeLimit(tokens(10), (await sTree.nextNode()) - 1);
@@ -128,7 +131,7 @@ describe("LiquidityTree", () => {
         }
 
         // all withdrawn
-        expect((await sTree.treeNode(1)).amount).to.be.equal(0);
+        expect((await sTree.treeNode(1)).amount).to.be.equal(ZERO);
         // withdrawn sum is all deposited + distributed 100
         expect(totalWitdrawn).to.be.equal(initLiquidity.add(TOKENS_100));
       });
@@ -144,9 +147,9 @@ describe("LiquidityTree", () => {
         }
 
         // all withdrawn
-        expect((await sTree.treeNode(1)).amount).to.be.equal(0);
+        expect((await sTree.treeNode(1)).amount).to.be.equal(ZERO);
         // withdrawn sum is all deposited - distributed 90 loss
-        expect(totalWitdrawn).to.be.equal(initLiquidity.sub(tokens(90)));
+        expect(totalWitdrawn).to.be.equal(initLiquidity.sub(TOKENS_90));
       });
     });
   });
@@ -176,7 +179,7 @@ describe("LiquidityTree", () => {
 
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(700));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(700));
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_400);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(300));
       expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
@@ -212,7 +215,7 @@ describe("LiquidityTree", () => {
 
       let withdrawPreview = await sTree.nodeWithdrawView(16);
       expect(withdrawPreview).to.be.equal(tokens(110));
-      
+
       let tx = await sTree.nodeWithdraw(16);
       expect(await getWithdrawnAmount(tx)).to.be.equal(withdrawPreview);
 
@@ -260,7 +263,7 @@ describe("LiquidityTree", () => {
       */
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(600));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(600));
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_400);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
@@ -311,139 +314,134 @@ describe("LiquidityTree", () => {
         +--------+--------+--------+--------+--------+--------+--------+--------+----+----+----+----+----+----+----+----+
             100    100        100      100      100      100      100 
       */
+      await checkNodeAmountTo(sTree, 1, tokens(700));
+      await checkNodeAmountTo(sTree, 2, tokens(700));
+      await checkNodeAmountTo(sTree, 4, TOKENS_400);
+      await checkNodeAmountTo(sTree, 5, tokens(300));
+      await checkNodeAmountTo(sTree, 8, TOKENS_200);
+      await checkNodeAmountTo(sTree, 9, TOKENS_200);
+      await checkNodeAmountTo(sTree, 10, TOKENS_200);
+      await checkNodeAmountTo(sTree, 11, TOKENS_100);
 
-      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(700));
-      expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(700));
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(300));
-      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
-      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
-      expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_200);
-      expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_100);
-
-      await sTree.remove(TOKENS_100);
+      await sTree.remove(tokens(70));
 
       /*
-        Liquidity tree structure after remove(100):
+        Liquidity tree structure after remove(70):
         +-------------------------------------------------------------------------------------------------------------------+
-        |                                                                        1(600)                                     |
+        |                                                                        1(630)                                     |
         +---------------------------------------------------------------------------+---------------------------------------+
-        |                                2(600)                                     |                   3                   |
+        |                                2(630)                                     |                   3                   |
         +-----------------------------------+---------------------------------------+---------------------------------------+
-        |              4(342.8571)          |              5(257.1428)              |         6         |         7         |
+        |               4(360)              |               5(270)                  |         6         |         7         |
         +-----------------+-----------------+-----------------+---------------------+---------+---------+---------+---------+
-        |     8(200)      |     9(200)      |    10(171.4285) |       11(85.7142)   |    12   |    13   |    14   |    15   |
+        |     8(200)      |     9(200)      |      10(180)    |         11(90)      |    12   |    13   |    14   |    15   |
         +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
-        | 16(100)| 17(100)| 18(100)| 19(100)| 20(100)| 21(100)| 22(85.7142)|   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+        | 16(100)| 17(100)| 18(100)| 19(100)| 20(100)| 21(100)|   22(90)   |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
         +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
             100    100        100      100      100      100         100 
 
-        100 tokens been removed for nodes:
-        1   600 = 700 - 100
-        2   600 = 700 - 100
-        4   342.8571 = 400 - 57.142857143   (100 * 400 / (400+300))
-        5   257.1428 = 300 - 42.857142857   (100 * 300 / (400+300))
-        10  171.4285 = 200 - 42.857142857 * 200 / (200+100)
-        11   85.7142 = 100 - 42.857142857 * 100 / (200+100)
+        70 tokens been removed for nodes:
+        1   630 = 700 - 70
+        2   630 = 700 - 70
+        4   360 = 400 - 40   (70 * 400 / (400+300))
+        5   270 = 300 - 30   (70 * 300 / (400+300))
+        10  200 = 200 - 30 * 200 / (200+100)
+        11   90 = 100 - 30 * 100 / (200+100)
       */
-
-      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(600));
-      expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(600));
-      expect(await getNodeAmount(sTree, 4)).to.be.closeTo("342857142857200000000", 100000000);
-      expect(await getNodeAmount(sTree, 5)).to.be.closeTo("257142857142800000000", 100000000);
-      expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
-      expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
-      expect(await getNodeAmount(sTree, 10)).to.be.closeTo("171428571428561904762", 100000000);
-      expect(await getNodeAmount(sTree, 11)).to.be.closeTo("85714285714238095238", 100000000);
+      await checkNodeAmountTo(sTree, 1, tokens(630));
+      await checkNodeAmountTo(sTree, 2, tokens(630));
+      await checkNodeAmountTo(sTree, 4, tokens(360));
+      await checkNodeAmountTo(sTree, 5, tokens(270));
+      await checkNodeAmountTo(sTree, 8, TOKENS_200);
+      await checkNodeAmountTo(sTree, 9, TOKENS_200);
+      await checkNodeAmountTo(sTree, 10, tokens(180));
+      await checkNodeAmountTo(sTree, 11, TOKENS_90);
 
       let withdrawPreview = await sTree.nodeWithdrawView(16);
       let tx = await sTree.nodeWithdraw(16);
 
       /*
         Liquidity tree structure after nodeWithdraw(16):
-        +---------------------------------------------------------------------------------------------------------------------+
-        |                                                             1(514.2857)                                             |
-        +-----------------------------------------------------------------------------+---------------------------------------+
-        |                                2(514.2857)                                  |                   3                   |
-        +-------------------------------------+---------------------------------------+-------------------+-------------------+
-        |              4(257.1428)            |                5(257.1428)            |         6         |         7         |
-        +-------------------+-----------------+-----------------+---------------------+---------+---------+---------+---------+
-        |     8(85.71428)   |     9(171.4285) |    10(171.4285) |      11(85.7142)    |    12   |    13   |    14   |    15   |
-        +------+------------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
-        | 16(0)| 17(85.7128)| 18(100)| 19(100)| 20(100)| 21(100)| 22(85.7142)|   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-        +------+------------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
+        +-------------------------------------------------------------------------------------------------------------------+
+        |                                                                        1(540)                                     |
+        +---------------------------------------------------------------------------+---------------------------------------+
+        |                                2(540)                                     |                   3                   |
+        +-----------------------------------+---------------------------------------+---------------------------------------+
+        |               4(270)              |               5(270)                  |         6         |         7         |
+        +-----------------+-----------------+-----------------+---------------------+---------+---------+---------+---------+
+        |      8(90)      |     9(200)      |      10(180)    |         11(90)      |    12   |    13   |    14   |    15   |
+        +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
+        |  16(0) | 17(100)| 18(100)| 19(100)| 20(100)| 21(100)|   22(90)   |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
                     100        100      100      100      100         100         
         
-        85.7142857143 tokens been withdrawn from leaf 16
+        90 tokens been withdrawn from leaf 16
       */
 
-      expect(await getWithdrawnAmount(tx)).to.be.equal(withdrawPreview); // 85714285714300000000
+      expect(withdrawPreview).to.be.equal(TOKENS_90);
+      expect(await getWithdrawnAmount(tx)).to.be.equal(withdrawPreview);
 
       // add liquidity
       await sTree.nodeAddLiquidity(TOKENS_100);
 
       /*
         Liquidity tree structure after nodeAddLiquidity(TOKENS_100):
-        +---------------------------------------------------------------------------------------------------------------------+
-        |                                                             1(614.2857)                                             |
-        +-----------------------------------------------------------------------------+---------------------------------------+
-        |                                2(614.2857)                                  |                   3                   |
-        +-------------------------------------+---------------------------------------+-------------------+-------------------+
-        |              4(257.1428)            |                5(357.1428)            |         6         |         7         |
-        +-------------------+-----------------+-----------------+---------------------+---------+---------+---------+---------+
-        |      8(85.7142)   |     9(171.4285) |    10(171.4285) |      11(185.7142)   |    12   |    13   |    14   |    15   |
-        +------+------------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
-        | 16(0)| 17(85.7128)| 18(100)| 19(100)| 20(100)| 21(100)| 22(85.7142)| 23(100)| 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-        +------+------------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
-                    100        100      100      100      100         100       100 
-        
-        85.7142857143 tokens been withdrawn from leaf 16
+        +-------------------------------------------------------------------------------------------------------------------+
+        |                                                                        1(640)                                     |
+        +---------------------------------------------------------------------------+---------------------------------------+
+        |                                2(640)                                     |                   3                   |
+        +-----------------------------------+---------------------------------------+---------------------------------------+
+        |               4(270)              |               5(370)                  |         6         |         7         |
+        +-----------------+-----------------+-----------------+---------------------+---------+---------+---------+---------+
+        |      8(90)      |     9(180)      |      10(180)    |        11(190)      |    12   |    13   |    14   |    15   |
+        +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
+        |  16(0) | 17(100)| 18(100)| 19(100)| 20(100)| 21(100)|   22(90)   | 23(100)| 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
+                    100        100      100      100      100         100       100
       */
-
-      expect(await getNodeAmount(sTree, 1)).to.be.closeTo("614285714285700000000", 100000000);
-      expect(await getNodeAmount(sTree, 2)).to.be.closeTo("614285714285700000000", 100000000);
-      expect(await getNodeAmount(sTree, 4)).to.be.closeTo("257142857142900000000", 100000000);
-      expect(await getNodeAmount(sTree, 5)).to.be.closeTo("357142857142800000000", 100000000);
-      expect(await getNodeAmount(sTree, 8)).to.be.closeTo("85714285714300000000", 100000000);
-      expect(await getNodeAmount(sTree, 9)).to.be.closeTo("171428571428600000000", 100000000);
-      expect(await getNodeAmount(sTree, 10)).to.be.closeTo("171428571428561904762", 100000000);
-      expect(await getNodeAmount(sTree, 11)).to.be.closeTo("185714285714238095238", 100000000);
-      expect(await getNodeAmount(sTree, 23)).to.be.equal(TOKENS_100);
+      await checkNodeAmountTo(sTree, 1, tokens(640));
+      await checkNodeAmountTo(sTree, 2, tokens(640));
+      await checkNodeAmountTo(sTree, 4, tokens(270));
+      await checkNodeAmountTo(sTree, 5, tokens(370));
+      await checkNodeAmountTo(sTree, 8, TOKENS_90);
+      await checkNodeAmountTo(sTree, 9, tokens(180));
+      await checkNodeAmountTo(sTree, 10, tokens(180));
+      await checkNodeAmountTo(sTree, 11, tokens(190));
+      await checkNodeAmountTo(sTree, 23, TOKENS_100);
 
       //addLimit only for leaves [16-22], 23 not included
-      await sTree.addLimit(TOKENS_100, 22);
+      await sTree.addLimit(TOKENS_60, 22);
 
       /*
         Liquidity tree structure after addLimit(100, 22):
-        +----------------------------------------------------------------------------------------------------------------------+
-        |                                                             1(714.2857)                                              |
-        +------------------------------------------------------------------------------+---------------------------------------+
-        |                                2(714.2857)                                   |                   3                   |
-        +-------------------------------------+----------------------------------------+-------------------+-------------------+
-        |              4(307.1428)            |                5(407.1428)             |         6         |         7         |
-        +-------------------+-----------------+-----------------+----------------------+---------+---------+---------+---------+
-        |     8(85.71428)   |     9(171.4285) |    10(204.7619) |      11(202.3809)    |    12   |    13   |    14   |    15   |
-        +------+------------+--------+--------+--------+--------+-------------+--------+----+----+----+----+----+----+----+----+
-        | 16(0)| 17(85.7128)| 18(100)| 19(100)| 20(100)| 21(100)| 22(102.3809)| 23(100)| 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-        +------+------------+--------+--------+--------+--------+-------------+--------+----+----+----+----+----+----+----+----+
+        +-------------------------------------------------------------------------------------------------------------------+
+        |                                                                        1(700)                                     |
+        +---------------------------------------------------------------------------+---------------------------------------+
+        |                                2(700)                                     |                   3                   |
+        +-----------------------------------+---------------------------------------+---------------------------------------+
+        |               4(300)              |               5(400)                  |         6         |         7         |
+        +-----------------+-----------------+-----------------+---------------------+---------+---------+---------+---------+
+        |       8(90)     |     9(180)      |      10(200)    |        11(200)      |    12   |    13   |    14   |    15   |
+        +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
+        |  16(0) | 17(100)| 18(100)| 19(100)| 20(100)| 21(100)|   22(100)  | 23(100)| 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
                     100        100      100      100      100         100       100
 
-        2 changed 614.2857       -> 714.2857
-        4 changed 257.1428571429 -> 307.1428571429 by 50.00 
-        5 changed 357.1428571429 -> 407.1428571429 by 50.00 (because 357.1428 - 100 = 257.1428)
+        2 changed 640 -> 700
+        4 changed 270 -> 300 by 30
+        5 changed 370 -> 400 by 30
         23 not changed because it is excluded by addLimit(TOKENS_100, 22)
       */
-
-      expect(await getNodeAmount(sTree, 1)).to.be.closeTo("714285714285700000000", 100000000);
-      expect(await getNodeAmount(sTree, 2)).to.be.closeTo("714285714285700000000", 100000000);
-      expect(await getNodeAmount(sTree, 4)).to.be.closeTo("307142857142900000000", 100000000);
-      expect(await getNodeAmount(sTree, 5)).to.be.closeTo("407142857142800000000", 100000000);
-      expect(await getNodeAmount(sTree, 8)).to.be.closeTo("85714285714300000000", 100000000);
-      expect(await getNodeAmount(sTree, 9)).to.be.closeTo("171428571428600000000", 100000000);
-      expect(await getNodeAmount(sTree, 10)).to.be.closeTo("204761904761861904762", 100000000);
-      expect(await getNodeAmount(sTree, 11)).to.be.closeTo("202380952380938095238", 100000000);
-      expect(await getNodeAmount(sTree, 22)).to.be.closeTo("102380952380938095238", 100000000);
-      expect(await getNodeAmount(sTree, 23)).to.be.equal(TOKENS_100);
+      await checkNodeAmountTo(sTree, 1, tokens(700));
+      await checkNodeAmountTo(sTree, 2, tokens(700));
+      await checkNodeAmountTo(sTree, 4, tokens(300));
+      await checkNodeAmountTo(sTree, 5, TOKENS_400);
+      await checkNodeAmountTo(sTree, 8, TOKENS_90);
+      await checkNodeAmountTo(sTree, 9, tokens(180));
+      await checkNodeAmountTo(sTree, 10, TOKENS_200);
+      await checkNodeAmountTo(sTree, 11, TOKENS_200);
+      await checkNodeAmountTo(sTree, 22, TOKENS_100);
+      await checkNodeAmountTo(sTree, 23, TOKENS_100);
 
       // checksum correctness node = left child + right child
       expect((await getNodeAmount(sTree, 4)).add(await getNodeAmount(sTree, 5))).to.be.equal(
@@ -474,26 +472,26 @@ describe("LiquidityTree", () => {
       let node21amount = await sTree.nodeWithdrawView(21);
       let node22amount = await sTree.nodeWithdrawView(22);
       let node23amount = await sTree.nodeWithdrawView(23);
-      await sTree.addLimit(TOKENS_100, 20);
 
+      await sTree.addLimit(TOKENS_100, 20);
       /*
         Liquidity tree structure after addLimit(100, 22):
-        +----------------------------------------------------------------------------------------------------------------------+
-        |                                                             1(814.2857)                                              |
-        +------------------------------------------------------------------------------+---------------------------------------+
-        |                                2(814.2857)                                   |                   3                   |
-        +-------------------------------------+----------------------------------------+-------------------+-------------------+
-        |              4(307.1428)            |                5(407.1428)             |         6         |         7         |
-        +-------------------+-----------------+-----------------+----------------------+---------+---------+---------+---------+
-        |     8(85.71428)   |     9(171.4285) |    10(204.7619) |      11(202.3809)    |    12   |    13   |    14   |    15   |
-        +------+------------+--------+--------+--------+--------+-------------+--------+----+----+----+----+----+----+----+----+
-        | 16(0)| 17(85.7128)| 18(100)| 19(100)| 20(100)| 21(100)| 22(102.3809)| 23(100)| 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-        +------+------------+--------+--------+--------+--------+-------------+--------+----+----+----+----+----+----+----+----+
+        +-------------------------------------------------------------------------------------------------------------------+
+        |                                                                        1(800)                                     |
+        +---------------------------------------------------------------------------+---------------------------------------+
+        |                                2(800)                                     |                   3                   |
+        +-----------------------------------+---------------------------------------+---------------------------------------+
+        |               4(375)              |               5(425)                  |         6         |         7         |
+        +-----------------+-----------------+-----------------+---------------------+---------+---------+---------+---------+
+        |       8(90)     |     9(180)      |      10(225)    |        11(200)      |    12   |    13   |    14   |    15   |
+        +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
+        |  16(0) | 17(100)| 18(100)| 19(100)| 20(125)| 21(100)|   22(100)  | 23(100)| 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+        +--------+--------+--------+--------+--------+--------+------------+--------+----+----+----+----+----+----+----+----+
                     100        100      100      100      100         100       100
 
-        2 changed 614.2857       -> 714.2857
-        4 changed 257.1428571429 -> 307.1428571429 by 50.00 
-        5 changed 357.1428571429 -> 407.1428571429 by 50.00 (because 357.1428 - 100 = 257.1428)
+        2 changed 700 -> 800
+        4 changed 300 -> 375 by 75 (100 * 3/4)
+        5 changed 400 -> 425 by 25 (100 * 1/4)
         23 not changed because it is excluded by addLimit(TOKENS_100, 22)
       */
 
@@ -526,6 +524,10 @@ describe("LiquidityTree", () => {
           .add(await sTree.nodeWithdrawView(17))
           .add(await sTree.nodeWithdrawView(16))
       );
+
+      // withdraw all and check tree zeroed
+      for (const i of Array(8).keys()) await sTree.nodeWithdraw(i + 16);
+      await checkTreeIsEmpty(sTree);
     });
     it("add liquidity to 7 leafs, remove limit for 7 leaves", async () => {
       for (const i of Array(9).keys()) await sTree.nodeAddLiquidity(TOKENS_100);
@@ -548,8 +550,8 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 1, tokens(900));
       await checkNodeAmountTo(sTree, 2, tokens(800));
       await checkNodeAmountTo(sTree, 3, TOKENS_100);
-      await checkNodeAmountTo(sTree, 4, tokens(400));
-      await checkNodeAmountTo(sTree, 5, tokens(400));
+      await checkNodeAmountTo(sTree, 4, TOKENS_400);
+      await checkNodeAmountTo(sTree, 5, TOKENS_400);
       await checkNodeAmountTo(sTree, 6, TOKENS_100);
       await checkNodeAmountTo(sTree, 7, ZERO);
       for (const i of Array(4).keys()) await checkNodeAmountTo(sTree, i + 8, TOKENS_200);
@@ -611,8 +613,8 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 1, tokens(900));
       await checkNodeAmountTo(sTree, 2, tokens(800));
       await checkNodeAmountTo(sTree, 3, TOKENS_100);
-      await checkNodeAmountTo(sTree, 4, tokens(400));
-      await checkNodeAmountTo(sTree, 5, tokens(400));
+      await checkNodeAmountTo(sTree, 4, TOKENS_400);
+      await checkNodeAmountTo(sTree, 5, TOKENS_400);
       await checkNodeAmountTo(sTree, 6, TOKENS_100);
       await checkNodeAmountTo(sTree, 7, ZERO);
       for (const i of Array(4).keys()) await checkNodeAmountTo(sTree, i + 8, TOKENS_200);
@@ -628,11 +630,135 @@ describe("LiquidityTree", () => {
     describe("3 iterates with (add liquidity 100 and top remove 100), mixed addLimit", async () => {
       beforeEach(async () => {
         for (const i of Array(3).keys()) {
-          await sTree.nodeAddLiquidity(TOKENS_100);
-          await sTree.remove(TOKENS_10);
+          await sTree.nodeAddLiquidity(tokens(110 - i * 10));
+          await sTree.remove(tokens(10 + 10 * i));
         }
+
         /*
-          Liquidity tree structure after nodeAddLiquidity(TOKENS_100):
+          Liquidity tree structure after mixed add + remove
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(240)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(240)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(240)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |      8(160)     |         9(80)       |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(100)| 17(100)|   18(80)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+              100    100          100
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(240));
+        await checkNodeAmountTo(sTree, 2, tokens(240));
+        await checkNodeAmountTo(sTree, 4, tokens(240));
+        await checkNodeAmountTo(sTree, 8, tokens(160));
+        await checkNodeAmountTo(sTree, 9, tokens(80));
+        await checkNodeAmountTo(sTree, 16, TOKENS_100); // added 110 and removed 10
+        await checkNodeAmountTo(sTree, 17, TOKENS_100); // added 100 and not updated (lazy)
+        await checkNodeAmountTo(sTree, 18, tokens(80)); // added 90 and removed 10
+
+        expect(await sTree.nodeWithdrawView(16)).to.be.eq(tokens(80));
+        expect(await sTree.nodeWithdrawView(17)).to.be.eq(tokens(80));
+        expect(await sTree.nodeWithdrawView(18)).to.be.eq(tokens(80));
+      });
+      it("straight addings (liquidity returns)", async () => {
+        await sTree.addLimit(tokens(160), 16);
+        /*
+          Liquidity tree structure after addLimit(tokens(10), 16)
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(400)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(400)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(400)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |      8(320)     |         9(80)       |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(240)| 17(80) |   18(80)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+        */
+        await checkNodeAmountTo(sTree, 1, TOKENS_400);
+        await checkNodeAmountTo(sTree, 2, TOKENS_400);
+        await checkNodeAmountTo(sTree, 4, TOKENS_400);
+        await checkNodeAmountTo(sTree, 8, tokens(320));
+        await checkNodeAmountTo(sTree, 9, tokens(80));
+        await checkNodeAmountTo(sTree, 16, tokens(240)); // updated to 80 and added (limit) 160
+        await checkNodeAmountTo(sTree, 17, tokens(80)); // updated from parent
+        await checkNodeAmountTo(sTree, 18, tokens(80)); // not changed
+
+        expect(await sTree.nodeWithdrawView(16)).to.be.eq(tokens(240));
+        expect(await sTree.nodeWithdrawView(17)).to.be.eq(tokens(80));
+        expect(await sTree.nodeWithdrawView(18)).to.be.eq(tokens(80));
+
+        await sTree.addLimit(tokens(240), 17);
+        /*
+          Liquidity tree structure after addLimit(tokens(240), 17):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(640)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(640)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(640)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |      8(560)     |         9(80)       |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(240)| 17(80) |   18(80)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(640));
+        await checkNodeAmountTo(sTree, 2, tokens(640));
+        await checkNodeAmountTo(sTree, 4, tokens(640));
+        await checkNodeAmountTo(sTree, 8, tokens(560));
+        await checkNodeAmountTo(sTree, 9, tokens(80));
+        await checkNodeAmountTo(sTree, 16, tokens(240));
+        await checkNodeAmountTo(sTree, 17, tokens(80));
+        await checkNodeAmountTo(sTree, 18, tokens(80));
+
+        expect(await sTree.nodeWithdrawView(16)).to.be.eq(tokens(420));
+        expect(await sTree.nodeWithdrawView(17)).to.be.eq(tokens(140));
+        expect(await sTree.nodeWithdrawView(18)).to.be.eq(tokens(80));
+
+        await sTree.addLimit(tokens(160), 18);
+        /*
+          Liquidity tree structure after addLimit(tokens(160), 18):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(800)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(800)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(800)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |      8(700)     |         9(100)      |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(240)| 17(80) |   18(100)  |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(800));
+        await checkNodeAmountTo(sTree, 2, tokens(800));
+        await checkNodeAmountTo(sTree, 4, tokens(800));
+        await checkNodeAmountTo(sTree, 8, tokens(700)); // 140 of 160
+        await checkNodeAmountTo(sTree, 9, TOKENS_100); //  20 of 160
+        await checkNodeAmountTo(sTree, 16, tokens(240));
+        await checkNodeAmountTo(sTree, 17, tokens(80));
+        await checkNodeAmountTo(sTree, 18, TOKENS_100);
+
+        let withdrawView16 = await sTree.nodeWithdrawView(16);
+        let withdrawView17 = await sTree.nodeWithdrawView(17);
+        let withdrawView18 = await sTree.nodeWithdrawView(18);
+
+        expect(withdrawView16).to.be.eq(tokens(525)); // 420 + 140 * 420/560
+        expect(withdrawView17).to.be.eq(tokens(175)); // 140 + 140 * 140/560
+        expect(withdrawView18).to.be.eq(TOKENS_100);
+
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(16))).to.be.equal(withdrawView16);
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(17))).to.be.equal(withdrawView17);
+        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal(withdrawView18);
+      });
+      it("reverse addings", async () => {
+        await sTree.addLimit(tokens(30), 18);
+        /*
+          Liquidity tree structure after nodeAddLiquidity(TOKENS_30):
           +---------------------------------------------------------------------------------------------------------------------------+
           |                                                                    1(270)                                                 |
           +-----------------------------------------------------------------------------------+---------------------------------------+
@@ -640,156 +766,113 @@ describe("LiquidityTree", () => {
           +---------------------------------------+-------------------------------------------+---------------------------------------+
           |              4(270)                   |                     5                     |         6         |         7         |
           +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
-          |     8(173.5714) |       9(96.4285)    |           10        |           11        |    12   |    13   |    14   |    15   |
+          |      8(180)     |         9(90)       |           10        |           11        |    12   |    13   |    14   |    15   |
           +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-          | 16(90) | 17(100)| 18(96.4285)|   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          | 16(100)| 17(100)|   18(90)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
           +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-              100    100          100          
         */
-      });
-      it("straight addings (liquidity returns)", async () => {
-        await sTree.addLimit(tokens(10), 16);
-        /*
-          Liquidity tree structure after nodeAddLiquidity(TOKENS_100):
-          +---------------------------------------------------------------------------------------------------------------------------------+
-          |                                                                                   1(280)                                        |
-          +-----------------------------------------------------------------------------------------+---------------------------------------+
-          |                                      2(280)                                             |                   3                   |
-          +---------------------------------------------+-------------------------------------------+---------------------------------------+
-          |                    4(280)                   |                     5                     |         6         |         7         |
-          +-----------------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
-          |       8(183.5714)     |       9(96.4285)    |           10        |           11        |    12   |    13   |    14   |    15   |
-          +-----------+-----------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-          |16(92.2180)|17(91.3533)| 18(96.4285)|   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-          +-----------+-----------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-              
-        */
+        await checkNodeAmountTo(sTree, 1, tokens(270));
+        await checkNodeAmountTo(sTree, 2, tokens(270));
+        await checkNodeAmountTo(sTree, 4, tokens(270));
+        await checkNodeAmountTo(sTree, 8, tokens(180));
+        await checkNodeAmountTo(sTree, 9, TOKENS_90);
+        await checkNodeAmountTo(sTree, 16, TOKENS_100); // added 110 and removed 10
+        await checkNodeAmountTo(sTree, 17, TOKENS_100); // added 100 and not updated (lazy)
+        await checkNodeAmountTo(sTree, 18, TOKENS_90);
 
-        await sTree.addLimit(tokens(10), 17);
+        expect(await sTree.nodeWithdrawView(16)).to.be.eq(TOKENS_90);
+        expect(await sTree.nodeWithdrawView(17)).to.be.eq(TOKENS_90);
+        expect(await sTree.nodeWithdrawView(18)).to.be.eq(TOKENS_90);
 
+        await sTree.addLimit(tokens(20), 17);
         /*
-          Liquidity tree structure after nodeAddLiquidity(TOKENS_100):
-          +---------------------------------------------------------------------------------------------------------------------------------+
-          |                                                                                   1(290)                                        |
-          +-----------------------------------------------------------------------------------------+---------------------------------------+
-          |                                      2(290)                                             |                   3                   |
-          +---------------------------------------------+-------------------------------------------+---------------------------------------+
-          |                    4(290)                   |                     5                     |         6         |         7         |
-          +-----------------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
-          |       8(193.5714)     |       9(96.4285)    |           10        |           11        |    12   |    13   |    14   |    15   |
-          +-----------+-----------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-          |16(92.2180)|17(91.3533)| 18(96.4285)|   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-          +-----------+-----------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-        */
-
-        await sTree.addLimit(tokens(10), 18);
-
-        /*
-          Liquidity tree structure after nodeAddLiquidity(TOKENS_100):
-          +---------------------------------------------------------------------------------------------------------------------------------+
-          |                                                                                   1(300)                                        |
-          +-----------------------------------------------------------------------------------------+---------------------------------------+
-          |                                      2(300)                                             |                   3                   |
-          +---------------------------------------------+-------------------------------------------+---------------------------------------+
-          |                    4(300)                   |                     5                     |         6         |         7         |
-          +-----------------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
-          |       8(200.2463)     |       9(99.7536)    |           10        |           11        |    12   |    13   |    14   |    15   |
-          +-----------+-----------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-          |16(92.2180)|17(91.3533)| 18(99.7536)|   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-          +-----------+-----------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-        */
-        let withdrawView16 = await sTree.nodeWithdrawView(16);
-        let withdrawView17 = await sTree.nodeWithdrawView(17);
-        let withdrawView18 = await sTree.nodeWithdrawView(18);
-        expect(withdrawView16).to.be.closeTo("100594754698365746841", 100000000);
-        expect(withdrawView17).to.be.closeTo("99651550720354253159", 100000000);
-        expect(withdrawView18).to.be.closeTo("99753694581280000000", 100000000);
-        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(16))).to.be.equal(withdrawView16); // "100594754698365746841"
-        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(17))).to.be.equal(withdrawView17); // "99651550720354253159");
-        expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal(withdrawView18); // "99753694581280000000");
-      });
-      it("reverse addings", async () => {
-        await sTree.addLimit(tokens(10), 18);
-        /*
-          Liquidity tree structure after nodeAddLiquidity(TOKENS_100):
+          Liquidity tree structure after nodeAddLiquidity(TOKENS_20):
           +---------------------------------------------------------------------------------------------------------------------------+
-          |                                                                    1(280)                                                 |
+          |                                                                    1(290)                                                 |
           +-----------------------------------------------------------------------------------+---------------------------------------+
-          |                                2(280)                                             |                   3                   |
+          |                                2(290)                                             |                   3                   |
           +---------------------------------------+-------------------------------------------+---------------------------------------+
-          |              4(280)                   |                     5                     |         6         |         7         |
+          |              4(290)                   |                     5                     |         6         |         7         |
           +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
-          |     8(180)      |         9(100)      |           10        |           11        |    12   |    13   |    14   |    15   |
+          |      8(200)     |         9(90)       |           10        |           11        |    12   |    13   |    14   |    15   |
           +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-          | 16(90) | 17(100)|  18(100)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          | 16(90) | 17(90) |   18(90)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
           +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
         */
+        await checkNodeAmountTo(sTree, 1, tokens(290));
+        await checkNodeAmountTo(sTree, 2, tokens(290));
+        await checkNodeAmountTo(sTree, 4, tokens(290));
+        await checkNodeAmountTo(sTree, 8, TOKENS_200);
+        await checkNodeAmountTo(sTree, 9, TOKENS_90);
+        await checkNodeAmountTo(sTree, 16, TOKENS_90); // pushed changes before add
+        await checkNodeAmountTo(sTree, 17, TOKENS_90); // pushed changes before add
+        await checkNodeAmountTo(sTree, 18, TOKENS_90);
 
-        await sTree.addLimit(tokens(10), 17);
-        /*
-          Liquidity tree structure after nodeAddLiquidity(TOKENS_100):
-          +------------------------------------------------------------------------------------------------------------------------------------+
-          |                                                                             1(290)                                                 |
-          +--------------------------------------------------------------------------------------------+---------------------------------------+
-          |                                         2(290)                                             |                   3                   |
-          +------------------------------------------------+-------------------------------------------+---------------------------------------+
-          |                       4(290)                   |                     5                     |         6         |         7         |
-          +--------------------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
-          |            8(190)        |         9(100)      |           10        |           11        |    12   |    13   |    14   |    15   |
-          +-------------+------------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-          | 16(85.2631) | 17(94.7368)|  18(100)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-          +-------------+------------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-        */
+        expect(await sTree.nodeWithdrawView(16)).to.be.eq(TOKENS_100);
+        expect(await sTree.nodeWithdrawView(17)).to.be.eq(TOKENS_100);
+        expect(await sTree.nodeWithdrawView(18)).to.be.eq(TOKENS_90);
 
         await sTree.addLimit(tokens(10), 16);
         /*
-          Liquidity tree structure after nodeAddLiquidity(TOKENS_100):
-          +------------------------------------------------------------------------------------------------------------------------------------+
-          |                                                                             1(300)                                                 |
-          +--------------------------------------------------------------------------------------------+---------------------------------------+
-          |                                         2(300)                                             |                   3                   |
-          +------------------------------------------------+-------------------------------------------+---------------------------------------+
-          |                       4(300)                   |                     5                     |         6         |         7         |
-          +--------------------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
-          |            8(200)        |         9(100)      |           10        |           11        |    12   |    13   |    14   |    15   |
-          +-------------+------------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-          | 16(99.9999) |17(100.0001)|  18(100)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-          +-------------+------------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          Liquidity tree structure after nodeAddLiquidity(TOKENS_10):
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(300)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(300)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(300)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |      8(210)     |         9(90)       |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(110)| 17(100)|   18(90)   |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
         */
+        await checkNodeAmountTo(sTree, 1, tokens(300));
+        await checkNodeAmountTo(sTree, 2, tokens(300));
+        await checkNodeAmountTo(sTree, 4, tokens(300));
+        await checkNodeAmountTo(sTree, 8, tokens(210));
+        await checkNodeAmountTo(sTree, 9, TOKENS_90);
+        await checkNodeAmountTo(sTree, 16, tokens(110));
+        await checkNodeAmountTo(sTree, 17, TOKENS_100); // pushed changes
+        await checkNodeAmountTo(sTree, 18, TOKENS_90);
+
+        expect(await sTree.nodeWithdrawView(16)).to.be.eq(tokens(110));
+        expect(await sTree.nodeWithdrawView(17)).to.be.eq(TOKENS_100);
+        expect(await sTree.nodeWithdrawView(18)).to.be.eq(TOKENS_90);
 
         let withdrawView17 = await sTree.nodeWithdrawView(17);
-        expect(withdrawView17).to.be.equal("100000000000000000001");
-
         expect(await getWithdrawnAmount(await sTree.nodeWithdraw(17))).to.be.equal(withdrawView17);
-        // get 50 % of leaf 18
-        expect(await getWithdrawnAmount(await sTree.nodeWithdrawPercent(18, 500000000000))).to.be.equal(TOKENS_50);
-        // get rest of leaf 18
+        // get 50 % of leaf 18 (90)
+        expect(await getWithdrawnAmount(await sTree.nodeWithdrawPercent(18, WITHDRAW_50_PERCENT))).to.be.equal(
+          tokens(45)
+        );
+        // get rest of leaf 18 (45)
         let withdrawView18 = await sTree.nodeWithdrawView(18);
-        expect(withdrawView18).to.be.equal(TOKENS_50);
+        expect(withdrawView18).to.be.equal(tokens(45));
         expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal(withdrawView18);
 
         //check double withdraw
         withdrawView18 = await sTree.nodeWithdrawView(18);
-        expect(withdrawView18).to.be.equal(0);
+        expect(withdrawView18).to.be.equal(ZERO);
         expect(await getWithdrawnAmount(await sTree.nodeWithdraw(18))).to.be.equal(withdrawView18);
 
         await sTree.removeLimit(tokens(10), 16);
         /*
           Liquidity tree structure:
-          +------------------------------------------------------------------------------------------------------------------------------+
-          |                                                                       1(99.9999)                                             |
-          +--------------------------------------------------------------------------------------+---------------------------------------+
-          |                              2(99.9999)                                              |                   3                   |
-          +------------------------------------------+-------------------------------------------+---------------------------------------+
-          |                 4(99.9999)               |                     5                     |         6         |         7         |
-          +--------------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
-          |     8(99.99)       |           9         |           10        |           11        |    12   |    13   |    14   |    15   |
-          +-----------+--------+----------+----------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
-          | 16(99.99) |   17   |    18    |     19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
-          +-----------+--------+----------+----------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          +---------------------------------------------------------------------------------------------------------------------------+
+          |                                                                    1(110)                                                 |
+          +-----------------------------------------------------------------------------------+---------------------------------------+
+          |                                2(110)                                             |                   3                   |
+          +---------------------------------------+-------------------------------------------+---------------------------------------+
+          |              4(110)                   |                     5                     |         6         |         7         |
+          +-----------------+---------------------+---------------------+---------------------+---------+---------+---------+---------+
+          |      8(110)     |         9(0)        |           10        |           11        |    12   |    13   |    14   |    15   |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
+          | 16(110)| 17(0)  |   18(0)    |   19   |     20     |    21  |      22    |   23   | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 |
+          +--------+--------+------------+--------+------------+--------+------------+--------+----+----+----+----+----+----+----+----+
         */
         let winthdrawAmount16 = await sTree.nodeWithdrawView(16);
-        expect(winthdrawAmount16).to.be.equal("89999999999999999999");
+        expect(winthdrawAmount16).to.be.equal(TOKENS_100);
         expect(await getWithdrawnAmount(await sTree.nodeWithdraw(16))).to.be.equal(winthdrawAmount16);
 
         for (const i of Array(32).keys()) {
@@ -1495,7 +1578,7 @@ describe("LiquidityTree", () => {
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+ 
       */
 
-      await checkNodeAmountTo(sTree, 1, tokens(90));
+      await checkNodeAmountTo(sTree, 1, TOKENS_90);
       await checkNodeAmountTo(sTree, 2, TOKENS_10);
       await checkNodeAmountTo(sTree, 3, TOKENS_80);
       await checkNodeAmountTo(sTree, 4, ZERO);
@@ -1507,7 +1590,7 @@ describe("LiquidityTree", () => {
       for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 16, ZERO);
       for (const i of Array(9).keys()) await checkNodeAmountTo(sTree, i + 23, TOKENS_10);
 
-      await sTree.addLimit(tokens(90), 22);
+      await sTree.addLimit(TOKENS_90, 22);
       /*
         Liquidity tree structure after addLimit to zeroed #22, add to all tree:
         +-----------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -1560,7 +1643,7 @@ describe("LiquidityTree", () => {
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+ 
       */
 
-      await checkNodeAmountTo(sTree, 1, tokens(60));
+      await checkNodeAmountTo(sTree, 1, TOKENS_60);
       await checkNodeAmountTo(sTree, 2, ZERO);
       await checkNodeAmountTo(sTree, 3, TOKENS_60);
       await checkNodeAmountTo(sTree, 4, ZERO);
@@ -1574,7 +1657,7 @@ describe("LiquidityTree", () => {
       for (const i of Array(6).keys()) await checkNodeAmountTo(sTree, i + 25, TOKENS_10);
       await checkNodeAmountTo(sTree, 31, ZERO);
 
-      await sTree.addLimit(tokens(60), 24);
+      await sTree.addLimit(TOKENS_60, 24);
       /*
         Liquidity tree structure after nodeAddLiquidity and removed #16 - #24:
         +-----------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -1637,9 +1720,9 @@ describe("LiquidityTree", () => {
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(1400));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(800));
       expect(await getNodeAmount(sTree, 3)).to.be.equal(tokens(600));
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(400));
-      expect(await getNodeAmount(sTree, 6)).to.be.equal(tokens(400));
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_400);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_400);
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_400);
       expect(await getNodeAmount(sTree, 7)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
@@ -1689,32 +1772,32 @@ describe("LiquidityTree", () => {
       */
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(700));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(500));
-      expect(await getNodeAmount(sTree, 3)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(100));
-      expect(await getNodeAmount(sTree, 6)).to.be.equal(tokens(200));
-      expect(await getNodeAmount(sTree, 7)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_400);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_100);
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_200);
+      expect(await getNodeAmount(sTree, 7)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_100);
-      expect(await getNodeAmount(sTree, 11)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 12)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 12)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 13)).to.be.equal(TOKENS_200);
-      expect(await getNodeAmount(sTree, 14)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 14)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 16)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 17)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 18)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 19)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 20)).to.be.equal(TOKENS_100);
-      expect(await getNodeAmount(sTree, 21)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 22)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 23)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 24)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 25)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 21)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 22)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 23)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 24)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 25)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 26)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 27)).to.be.equal(TOKENS_100);
-      expect(await getNodeAmount(sTree, 28)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 29)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 28)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 29)).to.be.equal(ZERO);
 
       // remove 7
       await sTree.remove(tokens(7));
@@ -1738,35 +1821,34 @@ describe("LiquidityTree", () => {
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(693));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(495));
       expect(await getNodeAmount(sTree, 3)).to.be.equal(tokens(198));
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(400));
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(100));
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_400);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(tokens(198));
-      expect(await getNodeAmount(sTree, 7)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 7)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 8)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 9)).to.be.equal(TOKENS_200);
       expect(await getNodeAmount(sTree, 10)).to.be.equal(TOKENS_100);
-      expect(await getNodeAmount(sTree, 11)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 12)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 12)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 13)).to.be.equal(TOKENS_200);
-      expect(await getNodeAmount(sTree, 14)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 14)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 16)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 17)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 18)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 19)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 20)).to.be.equal(TOKENS_100);
-      expect(await getNodeAmount(sTree, 21)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 22)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 23)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 24)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 25)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 21)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 22)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 23)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 24)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 25)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 26)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 27)).to.be.equal(TOKENS_100);
-      expect(await getNodeAmount(sTree, 28)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 29)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 28)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 29)).to.be.equal(ZERO);
 
       expect(await sTree.nodeWithdrawView(20)).to.be.equal(tokens(99));
     });
-    
   });
   describe("Example tree (4 leaves)", async () => {
     before(async () => {
@@ -1800,7 +1882,7 @@ describe("LiquidityTree", () => {
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(585));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(285));
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(tokens(90));
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_90);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(tokens(180));
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
     });
@@ -1810,7 +1892,7 @@ describe("LiquidityTree", () => {
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(490));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_190);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_190);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
       expect(withdrawAmount4).to.be.equal(tokens(95));
@@ -1820,10 +1902,10 @@ describe("LiquidityTree", () => {
       let withdrawAmount5 = await sTree.nodeWithdrawView(5);
       let tx5 = await sTree.nodeWithdraw(5);
       expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_300);
-      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_300);
       expect(withdrawAmount5).to.be.equal(TOKENS_190);
       expect(await getWithdrawnAmount(tx5)).to.be.equal(withdrawAmount5);
@@ -1881,11 +1963,11 @@ describe("LiquidityTree", () => {
     it("withdraw whole liquidity from leaf #5", async () => {
       await sTree.nodeWithdrawPercent(5, WITHDRAW_100_PERCENT);
 
-      expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(60));
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_60);
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_20);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_40);
       expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_20);
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_10);
       expect(await getNodeAmount(sTree, 7)).to.be.equal(TOKENS_10);
 
@@ -1906,7 +1988,7 @@ describe("LiquidityTree", () => {
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_45);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(tokens(65));
       expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_20);
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 6)).to.be.equal(TOKENS_45);
       expect(await getNodeAmount(sTree, 7)).to.be.equal(TOKENS_20);
 
@@ -1937,11 +2019,11 @@ describe("LiquidityTree", () => {
       */
 
       expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_20);
-      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_20);
-      expect(await getNodeAmount(sTree, 4)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 6)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 4)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 6)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 7)).to.be.equal(TOKENS_20);
     });
   });
@@ -2038,8 +2120,8 @@ describe("LiquidityTree", () => {
       |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (45$)|    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
       +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
 
-      expect(await getNodeAmount(sTree, 1)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_45);
       expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_45);
 
@@ -2048,7 +2130,7 @@ describe("LiquidityTree", () => {
       await sTree.nodeWithdraw(12);
 
       // Deposited 45 but removed from top and nothing to withdraw. This is 0 as we expect.
-      expect(await sTree.nodeWithdrawView(11)).to.be.equal(0);
+      expect(await sTree.nodeWithdrawView(11)).to.be.equal(ZERO);
       /*
       +-----------------------------------------------------------------------------------------+
       |                                          1 (0$)                                         |
@@ -2059,8 +2141,8 @@ describe("LiquidityTree", () => {
       +-------------+----------+---------+---------+-------------+----------+---------+---------+
       |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (45$)|    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
       +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
-      expect(await getNodeAmount(sTree, 1)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_45);
       expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_45);
 
@@ -2077,10 +2159,10 @@ describe("LiquidityTree", () => {
       +-------------+----------+---------+---------+-------------+----------+---------+---------+
       |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
       +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
-      expect(await getNodeAmount(sTree, 1)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 2)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 5)).to.be.equal(0);
-      expect(await getNodeAmount(sTree, 11)).to.be.equal(0);
+      expect(await getNodeAmount(sTree, 1)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 2)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 5)).to.be.equal(ZERO);
+      expect(await getNodeAmount(sTree, 11)).to.be.equal(ZERO);
     });
   });
 });
