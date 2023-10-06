@@ -567,8 +567,16 @@ contract LiquidityTree {
         if (begin <= l && l <= mid) {
             if (begin <= r && r <= mid) {
                 // [l,r] in [begin,mid] - all leafs in left child
-                if (isNeedUpdateWholeLeaves(node * 2, begin, mid, l, r, amount, isSub))
-                    return true;
+                return
+                    isNeedUpdateWholeLeaves(
+                        node * 2,
+                        begin,
+                        mid,
+                        l,
+                        r,
+                        amount,
+                        isSub
+                    );
             } else {
                 uint256 lAmount = treeNode[node * 2].amount;
                 // get right amount excluding unused leaves
@@ -580,8 +588,9 @@ contract LiquidityTree {
                     ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
                 );
 
-                // l in [begin,mid] - part in left child
-                if (
+                // l in [begin,mid] - part in left child or
+                // r in [mid+1,end] - part in right child
+                return
                     isNeedUpdateWholeLeaves(
                         node * 2,
                         begin,
@@ -590,11 +599,7 @@ contract LiquidityTree {
                         mid,
                         forLeftAmount,
                         isSub
-                    )
-                ) return true;
-
-                // r in [mid+1,end] - part in right child
-                if (
+                    ) ||
                     isNeedUpdateWholeLeaves(
                         node * 2 + 1,
                         mid + 1,
@@ -603,15 +608,21 @@ contract LiquidityTree {
                         r,
                         amount - forLeftAmount,
                         isSub
-                    )
-                ) return true;
+                    );
             }
-        } else {
-            // [l,r] in [mid+1,end] - all leafs in right child
-            if (
-                isNeedUpdateWholeLeaves(node * 2 + 1, mid + 1, end, l, r, amount, isSub)
-            ) return true;
         }
+        // [l,r] in [mid+1,end] - all leafs in right child
+        else
+            return
+                isNeedUpdateWholeLeaves(
+                    node * 2 + 1,
+                    mid + 1,
+                    end,
+                    l,
+                    r,
+                    amount,
+                    isSub
+                );
     }
 
     /**
