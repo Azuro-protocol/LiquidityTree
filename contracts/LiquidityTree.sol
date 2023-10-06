@@ -277,7 +277,7 @@ contract LiquidityTree {
         push(updatedNode, begin, end, leaf, ++updateId);
 
         if (
-            pushLazyCheck(
+            isNeedUpdateWholeLeaves(
                 1,
                 LIQUIDITYNODES,
                 LIQUIDITYLASTNODE,
@@ -324,7 +324,7 @@ contract LiquidityTree {
             push(updatedNode, begin, end, leaf, ++updateId);
 
             if (
-                pushLazyCheck(
+                isNeedUpdateWholeLeaves(
                     1,
                     LIQUIDITYNODES,
                     LIQUIDITYLASTNODE,
@@ -541,7 +541,7 @@ contract LiquidityTree {
      * @param isSub - true means negative to reduce
      * @return isUpdateInsufficient - true - if can't increase/reduce value because of insufficient or zero value.
      */
-    function pushLazyCheck(
+    function isNeedUpdateWholeLeaves(
         uint48 node,
         uint48 begin,
         uint48 end,
@@ -567,7 +567,7 @@ contract LiquidityTree {
         if (begin <= l && l <= mid) {
             if (begin <= r && r <= mid) {
                 // [l,r] in [begin,mid] - all leafs in left child
-                if (pushLazyCheck(node * 2, begin, mid, l, r, amount, isSub))
+                if (isNeedUpdateWholeLeaves(node * 2, begin, mid, l, r, amount, isSub))
                     return true;
             } else {
                 uint256 lAmount = treeNode[node * 2].amount;
@@ -582,7 +582,7 @@ contract LiquidityTree {
 
                 // l in [begin,mid] - part in left child
                 if (
-                    pushLazyCheck(
+                    isNeedUpdateWholeLeaves(
                         node * 2,
                         begin,
                         mid,
@@ -595,7 +595,7 @@ contract LiquidityTree {
 
                 // r in [mid+1,end] - part in right child
                 if (
-                    pushLazyCheck(
+                    isNeedUpdateWholeLeaves(
                         node * 2 + 1,
                         mid + 1,
                         end,
@@ -609,7 +609,7 @@ contract LiquidityTree {
         } else {
             // [l,r] in [mid+1,end] - all leafs in right child
             if (
-                pushLazyCheck(node * 2 + 1, mid + 1, end, l, r, amount, isSub)
+                isNeedUpdateWholeLeaves(node * 2 + 1, mid + 1, end, l, r, amount, isSub)
             ) return true;
         }
     }
