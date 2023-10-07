@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity 0.8.16;
 
 contract LiquidityTree {
     struct Node {
@@ -276,6 +276,18 @@ contract LiquidityTree {
         // push changes from last-updated node down to the leaf, if leaf is not up to date
         push(updatedNode, begin, end, leaf, ++updateId);
 
+        if (
+            isNeedUpdateWholeLeaves(
+                1,
+                LIQUIDITYNODES,
+                LIQUIDITYLASTNODE,
+                LIQUIDITYNODES,
+                leaf,
+                amount,
+                false
+            )
+        ) leaf = nextNode - 1; // push to the [LIQUIDITYNODES, leaf]
+
         pushLazy(
             1,
             LIQUIDITYNODES,
@@ -310,6 +322,18 @@ contract LiquidityTree {
 
             // push changes from last-updated node down to the leaf, if leaf is not up to date
             push(updatedNode, begin, end, leaf, ++updateId);
+
+            if (
+                isNeedUpdateWholeLeaves(
+                    1,
+                    LIQUIDITYNODES,
+                    LIQUIDITYLASTNODE,
+                    LIQUIDITYNODES,
+                    leaf,
+                    amount,
+                    true
+                )
+            ) leaf = nextNode - 1; // push to the [LIQUIDITYNODES, leaf]
 
             pushLazy(
                 1,
@@ -455,25 +479,14 @@ contract LiquidityTree {
                 // [l,r] in [begin,mid] - all leafs in left child
                 pushLazy(node * 2, begin, mid, l, r, amount, isSub, updateId_);
             } else {
-                uint128 lAmount = treeNode[node * 2].amount;
-                // get right amount excluding unused leaves when adding amounts
-                uint128 rAmount = treeNode[node * 2 + 1].amount -
-                    (
-                        !isSub
-                            ? getLeavesAmount(
-                                node * 2 + 1,
-                                mid + 1,
-                                end,
-                                r + 1,
-                                end
-                            )
-                            : 0
-                    );
-                uint128 sumAmounts = lAmount + rAmount;
+                uint256 lAmount = treeNode[node * 2].amount;
+                // get right amount excluding unused leaves
+                uint256 rAmount = treeNode[node * 2 + 1].amount -
+                    getLeavesAmount(node * 2 + 1, mid + 1, end, r + 1, end);
+                uint256 sumAmounts = lAmount + rAmount;
                 if (sumAmounts == 0) return;
                 uint128 forLeftAmount = uint128(
-                    (amount * ((uint256(lAmount) * DECIMALS) / sumAmounts)) /
-                        DECIMALS
+                    ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
                 );
 
                 // l in [begin,mid] - part in left child
@@ -517,6 +530,102 @@ contract LiquidityTree {
     }
 
     /**
+     * @dev push lazy preview (lazy propagation) amount value from top node to child nodes contained leafs from 0 to r
+     *      Returns `true` - means found exception and need to update whole leaves
+     * @param node - start from node
+     * @param begin - node left element
+     * @param end - node right element
+     * @param l - left leaf child
+     * @param r - right leaf child
+     * @param amount - amount to add/reduce stored amounts
+     * @param isSub - true means negative to reduce
+     * @return isUpdateInsufficient - true - if can't increase/reduce value because of insufficient or zero value.
+     */
+    function isNeedUpdateWholeLeaves(
+        uint48 node,
+        uint48 begin,
+        uint48 end,
+        uint48 l,
+        uint48 r,
+        uint128 amount,
+        bool isSub
+    ) internal view returns (bool isUpdateInsufficient) {
+        // if reducing and left node is insufficient in funds
+        // of increasing and left node is ZERO run push scenario (left+right) without excluding for [begin, r] leaves
+        if (
+            (isSub && treeNode[node].amount < amount) ||
+            (!isSub && treeNode[node].amount == 0)
+        ) return true;
+
+        if ((node * 2) >= LIQUIDITYNODES) return false; // leaves level reached
+
+        // if node leafs equal to leaf interval then stop
+        if ((begin == l && end == r) || (begin == end)) return false;
+
+        uint48 mid = (begin + end) / 2;
+
+        if (begin <= l && l <= mid) {
+            if (begin <= r && r <= mid) {
+                // [l,r] in [begin,mid] - all leafs in left child
+                return
+                    isNeedUpdateWholeLeaves(
+                        node * 2,
+                        begin,
+                        mid,
+                        l,
+                        r,
+                        amount,
+                        isSub
+                    );
+            } else {
+                uint256 lAmount = treeNode[node * 2].amount;
+                // get right amount excluding unused leaves
+                uint256 rAmount = treeNode[node * 2 + 1].amount -
+                    getLeavesAmount(node * 2 + 1, mid + 1, end, r + 1, end);
+                uint256 sumAmounts = lAmount + rAmount;
+                if (sumAmounts == 0) return true;
+                uint128 forLeftAmount = uint128(
+                    ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
+                );
+
+                // l in [begin,mid] - part in left child or
+                // r in [mid+1,end] - part in right child
+                return
+                    isNeedUpdateWholeLeaves(
+                        node * 2,
+                        begin,
+                        mid,
+                        l,
+                        mid,
+                        forLeftAmount,
+                        isSub
+                    ) ||
+                    isNeedUpdateWholeLeaves(
+                        node * 2 + 1,
+                        mid + 1,
+                        end,
+                        mid + 1,
+                        r,
+                        amount - forLeftAmount,
+                        isSub
+                    );
+            }
+        }
+        // [l,r] in [mid+1,end] - all leafs in right child
+        else
+            return
+                isNeedUpdateWholeLeaves(
+                    node * 2 + 1,
+                    mid + 1,
+                    end,
+                    l,
+                    r,
+                    amount,
+                    isSub
+                );
+    }
+
+    /**
      * @dev change amount by adding value or reducing value
      * @param node - node for changing
      * @param amount - amount value for changing
@@ -531,7 +640,8 @@ contract LiquidityTree {
     ) internal {
         treeNode[node].updateId = updateId_;
         if (isSub) {
-            treeNode[node].amount -= amount;
+            if (treeNode[node].amount >= amount)
+                treeNode[node].amount -= amount;
         } else {
             treeNode[node].amount += amount;
         }

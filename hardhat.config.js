@@ -26,11 +26,11 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.4",
+        version: "0.8.16",
         settings: {
 					optimizer: {
 						enabled: true,
-						runs: 1
+						runs: 2
 					}
 				}
       }
@@ -49,6 +49,11 @@ module.exports = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: true,
+    disambiguatePaths: false,
   },
   gasReporter: {
     enabled: true,
