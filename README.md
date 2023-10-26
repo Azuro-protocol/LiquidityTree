@@ -1,6 +1,6 @@
 # Liquidity tree project
 
-This project demonstrates the "segment tree" approach for accounting additions and withdrawals liquidity and fair profit/loose distribution for bet (stake) protocol
+This project demonstrates the "segment tree" approach for accounting additions and withdrawals liquidity and fair profit/loss distribution for bet (stake) protocol
 
 ## General concept
 A segment tree is a data structure that allows for efficient finding and changing of data in a range of elements.
@@ -151,6 +151,29 @@ nodeWithdraw(5)
 +-------------+----------+---------+---------+
                   -190$
 ```
+
+## Example with deposits in case of earnings/loss of liquidity from the "Game"
+1. $10,000 was added to the pool for liquidity providers Alice and Bob
+2. the game event was created using existing liquidity ($10,000)
+3. new liquidity provider (Clark) adds $1000 to the pool
+4. event resolved:
+    1. players won $2000, it is deducted from the pool, because the game event used only Alice and Bob's liquidity ($10,000), at the time the event was created. So the deductible amount of $2,000 is deducted proportionally from Alice's and Bob's deposits
+    2. players lost $2000 and the pool receives it, because the game event used only the liquidity of Alice and Bob ($10,000), at the time the event was created. So the amount of profit of $2000 is accrued proportionally to the deposits of Alice and Bob
+5. in both cases, Clark’s deposit is not involved and remains unchanged
+
+details in test ```There are 10000$ of liquidity, Bob added 1000$, remove 2000$ lose of leaves 4, 5, Clarc not affected```
+
+1. $15,000 was added to the pool for liquidity providers Alice ($5,000), Bob ($5,000) and Clark ($5,000)
+2. a game event was created using existing liquidity ($15,000)
+3. event resolved:
+    1. players won $3000, it is deducted from the pool, because the game event used the liquidity of Alice, Bob and Clark ($15,000), at the time the event was created. So amount of $3,000 is deducted proportionally from the deposits of Alice, Bob and Clark
+    2. players lost $3000 and the pool receives $3000, because game event used Alice, Bob and Clark ($15,000), at the time of event creation. So the profit of $3,000 is accrued proportionally to the deposits of Alice, Bob and Clark
+4. In both cases, Clark's deposit is involved:
+    1. when the pool is lost, Clark’s deposit will be $5000 - $1000 = $4000
+    2. when the pool is earned, Clark’s deposit will be $5000 + $1000 = $6000
+
+details in test ```There are 15000$ of liquidity, Bob added 1000$, remove 3000$ lose of leaves 4, 5, 6. Clarc affected```
+
 
 ## compile and test tasks:
 
