@@ -50,6 +50,7 @@ contract LiquidityTree {
     /**
      * @dev add liquidity amount from the leaf up to top node
      * @param amount - adding amount
+     * @return resNode - node (leaf) number of added liquidity
      */
     function nodeAddLiquidity(uint128 amount) public returns (uint48 resNode) {
         updateUp(nextNode, amount, false, ++updateId);
@@ -65,6 +66,7 @@ contract LiquidityTree {
      * @dev 2 - push all changes from found parent doen to the leaf - that updates leaf's amount
      * @dev 3 - execute withdraw of leaf amount and update amount changing up to top parents
      * @param leaf - leaf number to completely withdraw
+     * @return withdrawAmount - withdrawn amount of the leaf
      */
     function nodeWithdraw(uint48 leaf) public returns (uint128 withdrawAmount) {
         withdrawAmount = nodeWithdrawPercent(leaf, DECIMALS);
@@ -73,6 +75,7 @@ contract LiquidityTree {
     /**
      * @dev leaf withdraw preview, emulates push value from updated node to leaf
      * @param leaf - withdrawing leaf
+     * @return withdrawAmount - withdrawal preview amount of the leaf
      */
     function nodeWithdrawView(uint48 leaf)
         public
@@ -113,6 +116,7 @@ contract LiquidityTree {
      * @dev 3 - execute withdraw of leaf amount and update amount changing up to top parents
      * @param leaf - leaf number
      * @param percent - percent of leaf amount 1*10^12 is 100%, 5*10^11 is 50%
+     * @return withdrawAmount - withdrawn amount of the leaf according percent share
      */
     function nodeWithdrawPercent(uint48 leaf, uint40 percent)
         public
@@ -415,6 +419,7 @@ contract LiquidityTree {
      * @param end - leaf search end
      * @param leaf - last node to update
      * @param amount - pushed (calced) amount for the node
+     * @return withdrawAmount - withdrawal preview amount of the leaf
      */
     function pushView(
         uint48 node,

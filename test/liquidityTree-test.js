@@ -2027,6 +2027,115 @@ describe("LiquidityTree", () => {
       expect(await getNodeAmount(sTree, 7)).to.be.equal(TOKENS_20);
     });
   });
+  describe("Example tree (4 leaves) fair distribution Alice, Bob, Clarc", async () => {
+    beforeEach(async () => {
+      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS);
+    });
+    it("There are 10000$ of liquidity, Bob added 1000$, remove 2000$ lose of leaves 4, 5, Clarc not affected", async () => {
+      // Alice and Bob added
+      await sTree.nodeAddLiquidity(tokens(5000));
+      await sTree.nodeAddLiquidity(tokens(5000));
+      /*
+      +---------------------------------------------+
+      |                  1 (10000$)                 |
+      +-------------------------+-------------------+
+      |        2 (10000$)       |      3 (0$)       |
+      +-------------+-----------+---------+---------+
+      |  4 (5000$)  | 5 (5000$) |  6 (0$) |  7 (0$) |
+      +-------------+-----------+---------+---------+
+            ^              ^
+      Alice |          Bob |                    
+      */
+
+      // Clarc added
+      await sTree.nodeAddLiquidity(tokens(1000));
+      /*
+      +------------------------------------------------+
+      |                  1 (11000$)                    |
+      +-------------------------+----------------------+
+      |        2 (10000$)       |      3 (1000$)       |
+      +-------------+-----------+------------+---------+
+      |  4 (5000$)  | 5 (5000$) |  6 (1000$) |  7 (0$) |
+      +-------------+-----------+------------+---------+
+                                      ^
+                                Clarc |
+      */
+
+      // remove 2000$, afects only leaves 4, 5
+      await sTree.removeLimit(tokens(2000), 5);
+
+      /*
+      +------------------------------------------------+
+      |                   1 (9000$)                    |
+      +-------------------------+----------------------+
+      |         2 (8000$)       |      3 (1000$)       |
+      +-------------+-----------+------------+---------+
+      |  4 (5000$)  | 5 (4000$) |  6 (1000$) |  7 (0$) |
+      +-------------+-----------+------------+---------+
+      */
+      checkNodeAmountTo(sTree, 1, tokens(9000));
+      checkNodeAmountTo(sTree, 2, tokens(8000));
+      checkNodeAmountTo(sTree, 3, tokens(1000));
+      checkNodeAmountTo(sTree, 4, tokens(5000)); // not affected because of lazy update
+      checkNodeAmountTo(sTree, 5, tokens(5000)); // not affected because of lazy update
+      checkNodeAmountTo(sTree, 6, tokens(1000));
+      checkNodeAmountTo(sTree, 7, tokens(0));
+
+      expect(await sTree.nodeWithdrawView(4)).to.be.equal(tokens(4000));
+      expect(await sTree.nodeWithdrawView(5)).to.be.equal(tokens(4000));
+      expect(await sTree.nodeWithdrawView(6)).to.be.equal(tokens(1000));
+
+      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(4))).to.be.equal(tokens(4000));
+      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(5))).to.be.equal(tokens(4000));
+      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(6))).to.be.equal(tokens(1000));
+    });
+    it("There are 15000$ of liquidity, Bob added 1000$, remove 3000$ lose of leaves 4, 5, 6. Clarc affected", async () => {
+      // Alice, Bob and Clarc added
+      await sTree.nodeAddLiquidity(tokens(5000));
+      await sTree.nodeAddLiquidity(tokens(5000));
+      await sTree.nodeAddLiquidity(tokens(5000));
+      /*
+      +------------------------------------------------+
+      |                  1 (15000$)                    |
+      +-------------------------+----------------------+
+      |        2 (10000$)       |      3 (5000$)       |
+      +-------------+-----------+------------+---------+
+      |  4 (5000$)  | 5 (5000$) |  6 (5000$) |  7 (0$) |
+      +-------------+-----------+------------+---------+
+             ^             ^            ^
+       Alice |         Bob |      Clarc |
+      */
+
+      // condition resolves with 3000$ lose of LP (afects only leaves 4, 5, 6)
+      await sTree.removeLimit(tokens(3000), 6);
+
+      /*
+      +------------------------------------------------+
+      |                  1 (12000$)                    |
+      +-------------------------+----------------------+
+      |        2 (10000$)       |      3 (4000$)       |
+      +-------------+-----------+------------+---------+
+      |  4 (5000$)  | 5 (5000$) |  6 (4000$) |  7 (0$) |
+      +-------------+-----------+------------+---------+
+
+      */
+      checkNodeAmountTo(sTree, 1, tokens(12000));
+      checkNodeAmountTo(sTree, 2, tokens(10000));
+      checkNodeAmountTo(sTree, 3, tokens(4000));
+      checkNodeAmountTo(sTree, 4, tokens(5000)); // not affected because of lazy update
+      checkNodeAmountTo(sTree, 5, tokens(5000)); // not affected because of lazy update
+      checkNodeAmountTo(sTree, 6, tokens(4000));
+      checkNodeAmountTo(sTree, 7, tokens(0));
+
+      expect(await sTree.nodeWithdrawView(4)).to.be.equal(tokens(4000));
+      expect(await sTree.nodeWithdrawView(5)).to.be.equal(tokens(4000));
+      expect(await sTree.nodeWithdrawView(6)).to.be.equal(tokens(4000));
+
+      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(4))).to.be.equal(tokens(4000));
+      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(5))).to.be.equal(tokens(4000));
+      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(6))).to.be.equal(tokens(4000));
+    });
+  });
   describe("Example tree (2 leaves) fair distribution", async () => {
     before(async () => {
       sTree = await prepareTree(ethers, TINY_TREE_LEAFS);
