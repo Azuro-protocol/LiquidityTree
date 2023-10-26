@@ -167,7 +167,7 @@ details in test ```There are 10000$ of liquidity, Bob added 1000$, remove 2000$ 
 2. a game event was created using existing liquidity ($15,000)
 3. event resolved:
     1. players won $3000, it is deducted from the pool, because the game event used the liquidity of Alice, Bob and Clark ($15,000), at the time the event was created. So amount of $3,000 is deducted proportionally from the deposits of Alice, Bob and Clark
-    2. players lost $3000 and the pool receives $3000, because game event used Alice, Bob and Clark ($15,000), at the time of event creation. So the profit of $3,000 is accrued proportionally to the deposits of Alice, Bob and Clark
+    2. players lost $3000 and the pool receives $3000, because game event used liquidity of Alice, Bob and Clark ($15,000), at the time of event creation. So the profit of $3,000 is accrued proportionally to the deposits of Alice, Bob and Clark
 4. In both cases, Clark's deposit is involved:
     1. when the pool is lost, Clark’s deposit will be $5000 - $1000 = $4000
     2. when the pool is earned, Clark’s deposit will be $5000 + $1000 = $6000
