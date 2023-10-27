@@ -2136,7 +2136,7 @@ describe("LiquidityTree", () => {
       expect(await getWithdrawnAmount(await sTree.nodeWithdraw(6))).to.be.equal(tokens(4000));
     });
     it("Try add 0 liquidity", async () => {
-      await expect(sTree.nodeAddLiquidity(0)).to.be.revertedWith("IncorrectAddLiquidityAmount");
+      await expect(sTree.nodeAddLiquidity(0)).to.be.revertedWith("IncorrectAmount");
     });
   });
   describe("Example tree (2 leaves) fair distribution", async () => {
@@ -2193,11 +2193,11 @@ describe("LiquidityTree", () => {
     });
     it("add liquidity 45$, remove 45$, try withdraw it", async () => {
       // Add three leaves so the one we will be using is the last of the left "main branch"
-      await sTree.nodeAddLiquidity(0);
+      await sTree.nodeAddLiquidity(1);
       await sTree.nodeWithdraw(8);
-      await sTree.nodeAddLiquidity(0);
+      await sTree.nodeAddLiquidity(1);
       await sTree.nodeWithdraw(9);
-      await sTree.nodeAddLiquidity(0);
+      await sTree.nodeAddLiquidity(1);
       await sTree.nodeWithdraw(10);
 
       // Add liquidity to the node to be tested
@@ -2238,7 +2238,7 @@ describe("LiquidityTree", () => {
       expect(await getNodeAmount(sTree, 11)).to.be.equal(TOKENS_45);
 
       // Add another node so 'tree.updateId' propagates back to the root when we do a push
-      await sTree.nodeAddLiquidity(0);
+      await sTree.nodeAddLiquidity(1);
       await sTree.nodeWithdraw(12);
 
       // Deposited 45 but removed from top and nothing to withdraw. This is 0 as we expect.

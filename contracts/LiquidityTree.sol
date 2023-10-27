@@ -21,7 +21,7 @@ contract LiquidityTree {
 
     event withdrawn(address wallet, uint128 amount);
 
-    error IncorrectAddLiquidityAmount();
+    error IncorrectAmount();
     error IncorrectLeaf();
     error LeafNotExist();
     error IncorrectPercent();
@@ -54,9 +54,9 @@ contract LiquidityTree {
      * @return resNode - node (leaf) number of added liquidity
      */
     function nodeAddLiquidity(uint128 amount) public returns (uint48 resNode) {
-        if (amount == 0) revert IncorrectAddLiquidityAmount();
+        _checkAmount(amount);
         updateUp(nextNode, amount, false, ++updateId);
-        resNode = nextNode;        
+        resNode = nextNode;
         nextNode++;
     }
 
@@ -248,6 +248,7 @@ contract LiquidityTree {
      * @param amount value to add
      */
     function add(uint128 amount) public {
+        _checkAmount(amount);
         pushLazy(
             1,
             LIQUIDITYNODES,
@@ -265,6 +266,7 @@ contract LiquidityTree {
      * @param amount value to add
      */
     function addLimit(uint128 amount, uint48 leaf) public {
+        _checkAmount(amount);
         if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
             revert IncorrectLeaf();
         // get last-updated top node
@@ -311,6 +313,7 @@ contract LiquidityTree {
      * @param amount value to remove
      */
     function removeLimit(uint128 amount, uint48 leaf) public {
+        _checkAmount(amount);
         if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
             revert IncorrectLeaf();
         if (treeNode[1].amount >= amount) {
@@ -359,6 +362,7 @@ contract LiquidityTree {
      * @param amount value to removeamount
      */
     function remove(uint128 amount) public {
+        _checkAmount(amount);
         if (treeNode[1].amount >= amount) {
             pushLazy(
                 1,
@@ -442,6 +446,7 @@ contract LiquidityTree {
         uint128 setLAmount = sumAmounts == 0
             ? 0
             : uint128((amount * lAmount) / sumAmounts);
+        if (sumAmounts == 0) console.log("pushView()!");
 
         uint48 mid = (begin + end) / 2;
 
@@ -729,5 +734,9 @@ contract LiquidityTree {
         }
 
         return amount;
+    }
+
+    function _checkAmount(uint256 amount) internal pure {
+        if (amount == 0) revert IncorrectAmount();
     }
 }
