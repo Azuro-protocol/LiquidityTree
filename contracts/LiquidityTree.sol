@@ -446,7 +446,6 @@ contract LiquidityTree {
         uint128 setLAmount = sumAmounts == 0
             ? 0
             : uint128((amount * lAmount) / sumAmounts);
-        if (sumAmounts == 0) console.log("pushView()!");
 
         uint48 mid = (begin + end) / 2;
 
