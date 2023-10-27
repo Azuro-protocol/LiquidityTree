@@ -21,6 +21,7 @@ contract LiquidityTree {
 
     event withdrawn(address wallet, uint128 amount);
 
+    error IncorrectAddLiquidityAmount();
     error IncorrectLeaf();
     error LeafNotExist();
     error IncorrectPercent();
@@ -53,8 +54,9 @@ contract LiquidityTree {
      * @return resNode - node (leaf) number of added liquidity
      */
     function nodeAddLiquidity(uint128 amount) public returns (uint48 resNode) {
+        if (amount == 0) revert IncorrectAddLiquidityAmount();
         updateUp(nextNode, amount, false, ++updateId);
-        resNode = nextNode;
+        resNode = nextNode;        
         nextNode++;
     }
 

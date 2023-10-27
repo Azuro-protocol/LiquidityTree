@@ -2135,6 +2135,9 @@ describe("LiquidityTree", () => {
       expect(await getWithdrawnAmount(await sTree.nodeWithdraw(5))).to.be.equal(tokens(4000));
       expect(await getWithdrawnAmount(await sTree.nodeWithdraw(6))).to.be.equal(tokens(4000));
     });
+    it("Try add 0 liquidity", async () => {
+      await expect(sTree.nodeAddLiquidity(0)).to.be.revertedWith("IncorrectAddLiquidityAmount");
+    });
   });
   describe("Example tree (2 leaves) fair distribution", async () => {
     before(async () => {
