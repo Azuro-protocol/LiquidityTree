@@ -978,14 +978,14 @@ describe("LiquidityTree", () => {
         +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
         |     8(0)        |        9        |       10        |       11        |        12         |        13         |        14         |    15   |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
-        | 16(0)  | 17(10) |   18   |    19  |    20  |    21  |    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
+        | 16(0)  | 17(5)  |   18   |    19  |    20  |    21  |    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+ 
       */
 
       for (const i of Array(16).keys()) {
         await checkNodeAmountTo(sTree, i, ZERO);
       }
-      //await checkNodeAmountTo(sTree, 17, TOKENS_10);
+      await checkNodeAmountTo(sTree, 17, TOKENS_5);
 
       expect(await sTree.nodeWithdrawView(17)).to.be.eq(ZERO);
       expect(await getWithdrawnAmount(await sTree.nodeWithdraw(17))).to.be.eq(ZERO);
@@ -2277,7 +2277,7 @@ describe("LiquidityTree", () => {
     });
     it("add liquidity add/withdraw, removeLimit and remove", async () => {
       await sTree.nodeAddLiquidity(3); // leaf #8
-      
+
       await sTree.nodeAddLiquidity(1); // leaf #9
       await sTree.nodeWithdraw(9);
 
@@ -2325,7 +2325,7 @@ describe("LiquidityTree", () => {
 
       expect(await sTree.nodeWithdrawView(8)).to.be.equal(2);
       expect(await sTree.nodeWithdrawView(10)).to.be.equal(0);
-      
+
       // remove from top node
       console.log("------------------ remove ----------------------");
       await sTree.remove(1);
@@ -2347,14 +2347,12 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 8, 3);
       for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, 0);
 
-      console.log("node 2", await sTree.treeNode(2));
-      console.log("node 4", await sTree.treeNode(4));
-
+      expect(await sTree.nodeWithdrawView(8)).to.be.equal(1);
+      expect(await getWithdrawnAmount(await await sTree.nodeWithdraw(8))).to.be.eq(1);
       
       expect(await sTree.nodeWithdrawView(10)).to.be.equal(0);
-      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(10))).to.be.eq(0);
-      expect(await sTree.nodeWithdrawView(8)).to.be.equal(1);
-      expect(await getWithdrawnAmount(await sTree.nodeWithdraw(8))).to.be.eq(1);
+      expect(await getWithdrawnAmount(await await sTree.nodeWithdraw(10))).to.be.eq(0);
+
       /*+-----------------------------------------------------------------------------------------+
         |                                          1 (0$)                                         |
         +--------------------------------------------+--------------------------------------------+

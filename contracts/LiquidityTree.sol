@@ -87,25 +87,13 @@ contract LiquidityTree {
         if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE) return 0;
         if (treeNode[leaf].updateId == 0) return 0;
 
-        // get last-updated top node
-        (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
-            1,
-            treeNode[1].updateId,
-            LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
-            1,
-            LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
-            leaf
-        );
-
         return
             pushView(
-                updatedNode,
-                begin,
-                end,
+                1,
+                LIQUIDITYNODES,
+                LIQUIDITYLASTNODE,
                 leaf,
-                treeNode[updatedNode].amount
+                treeNode[1].amount
             );
     }
 
@@ -129,19 +117,8 @@ contract LiquidityTree {
             revert IncorrectLeaf();
         if (percent > DECIMALS) revert IncorrectPercent();
 
-        // get last-updated top node
-        (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
-            1,
-            treeNode[1].updateId,
-            LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
-            1,
-            LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
-            leaf
-        );
-        // push changes from last-updated node down to the leaf, if leaf is not up to date
-        push(updatedNode, begin, end, leaf, ++updateId);
+        // push changes from top node down to the leaf, if leaf is not up to date
+        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
 
         // remove amount (percent of amount) from leaf to it's parents
         withdrawAmount = uint128(
@@ -153,80 +130,6 @@ contract LiquidityTree {
         emit withdrawn(msg.sender, withdrawAmount);
     }
 
-    /**
-     * @dev top node is ever most updated, trying to find lower node not older then top node
-     * @dev get nearest to leaf (lowest) last-updated node from the parents, runing down from top to leaf
-     * @param parent top node
-     * @param parentUpdate top node update
-     * @param parentBegin top node most left leaf
-     * @param parentEnd top node most right leaf
-     * @param node node parent for the leaf
-     * @param begin node most left leaf
-     * @param end node most right leaf
-     * @param leaf target leaf
-     * @return resParent found most updated leaf parent
-     * @return resBegin found parent most left leaf
-     * @return resEnd found parent most right leaf
-     */
-    function getUpdatedNode(
-        uint48 parent,
-        uint64 parentUpdate,
-        uint48 parentBegin,
-        uint48 parentEnd,
-        uint48 node,
-        uint48 begin,
-        uint48 end,
-        uint48 leaf
-    )
-        internal
-        view
-        returns (
-            uint48 resParent,
-            uint48 resBegin,
-            uint48 resEnd
-        )
-    {
-        // if node is older than it's parent, stop and return parent
-        if (treeNode[node].updateId <= parentUpdate) {
-        //if (treeNode[node].updateId < parentUpdate) {
-            //console.log("getUpdatedNode leaf", parent, parentBegin, parentEnd);
-            return (parent, parentBegin, parentEnd);
-        }
-        if (node == leaf) {
-            //console.log("getUpdatedNode leaf", leaf, begin, end);
-            return (leaf, begin, end);
-        }
-
-        uint48 mid = (begin + end) / 2;
-
-        if (begin <= leaf && leaf <= mid) {
-            // work on left child
-            (resParent, resBegin, resEnd) = getUpdatedNode(
-                node,
-                parentUpdate,
-                begin,
-                end,
-                node * 2,
-                begin,
-                mid,
-                leaf
-            );
-        } else {
-            // work on right child
-            (resParent, resBegin, resEnd) = getUpdatedNode(
-                node,
-                parentUpdate,
-                begin,
-                end,
-                node * 2 + 1,
-                mid + 1,
-                end,
-                leaf
-            );
-        }
-    }
-
-    /**
      * @dev update up amounts from leaf up to top node #1, used in adding/removing values on leaves
      * @param child node for update
      * @param amount value for update
@@ -272,20 +175,9 @@ contract LiquidityTree {
         _checkAmount(amount);
         if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
             revert IncorrectLeaf();
-        // get last-updated top node
-        (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
-            1,
-            treeNode[1].updateId,
-            LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
-            1,
-            LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
-            leaf
-        );
 
-        // push changes from last-updated node down to the leaf, if leaf is not up to date
-        push(updatedNode, begin, end, leaf, ++updateId);
+        // push changes from top node down to the leaf
+        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
 
         if (
             isNeedUpdateWholeLeaves(
@@ -320,20 +212,8 @@ contract LiquidityTree {
         if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
             revert IncorrectLeaf();
         if (treeNode[1].amount >= amount) {
-            // get last-updated top node
-            (uint48 updatedNode, uint48 begin, uint48 end) = getUpdatedNode(
-                1,
-                treeNode[1].updateId,
-                LIQUIDITYNODES,
-                LIQUIDITYLASTNODE,
-                1,
-                LIQUIDITYNODES,
-                LIQUIDITYLASTNODE,
-                leaf
-            );
-
-            // push changes from last-updated node down to the leaf, if leaf is not up to date
-            push(updatedNode, begin, end, leaf, ++updateId);
+            // push changes from top node down to the leaf
+            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
 
             if (
                 isNeedUpdateWholeLeaves(
