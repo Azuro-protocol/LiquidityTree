@@ -130,6 +130,7 @@ contract LiquidityTree {
         emit withdrawn(msg.sender, withdrawAmount);
     }
 
+    /**
      * @dev update up amounts from leaf up to top node #1, used in adding/removing values on leaves
      * @param child node for update
      * @param amount value for update
