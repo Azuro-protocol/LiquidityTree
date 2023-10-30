@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.16;
-
+import "hardhat/console.sol";
 contract LiquidityTree {
     struct Node {
         uint64 updateId; // last update number
@@ -187,10 +187,13 @@ contract LiquidityTree {
         )
     {
         // if node is older than it's parent, stop and return parent
-        if (treeNode[node].updateId < parentUpdate) {
+        if (treeNode[node].updateId <= parentUpdate) {
+        //if (treeNode[node].updateId < parentUpdate) {
+            //console.log("getUpdatedNode leaf", parent, parentBegin, parentEnd);
             return (parent, parentBegin, parentEnd);
         }
         if (node == leaf) {
+            //console.log("getUpdatedNode leaf", leaf, begin, end);
             return (leaf, begin, end);
         }
 
@@ -406,7 +409,9 @@ contract LiquidityTree {
             : uint128((amount * lAmount) / sumAmounts);
 
         // update left and right child
+        //console.log("push lChild %s setLAmount %s updateId_ %s", lChild, setLAmount, updateId_);
         setAmount(lChild, setLAmount, updateId_);
+        //console.log("push rChild %s setRAmount %s updateId_ %s", rChild, amount - setLAmount, updateId_);
         setAmount(rChild, amount - setLAmount, updateId_);
 
         uint48 mid = (begin + end) / 2;
@@ -496,8 +501,10 @@ contract LiquidityTree {
                     getLeavesAmount(node * 2 + 1, mid + 1, end, r + 1, end);
                 uint256 sumAmounts = lAmount + rAmount;
                 if (sumAmounts == 0) return;
+                uint256 parentAmount = treeNode[node].amount;
+                uint256 accDelta = sumAmounts > parentAmount ? sumAmounts - parentAmount + amount : parentAmount - sumAmounts + amount;
                 uint128 forLeftAmount = uint128(
-                    ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
+                    ((/* amount */accDelta * lAmount * DECIMALS) / sumAmounts) / DECIMALS
                 );
 
                 // l in [begin,mid] - part in left child
@@ -519,7 +526,7 @@ contract LiquidityTree {
                     end,
                     mid + 1,
                     r,
-                    amount - forLeftAmount,
+                    /* amount */uint128(accDelta) - forLeftAmount,
                     isSub,
                     updateId_
                 );
