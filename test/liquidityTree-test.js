@@ -2276,5 +2276,90 @@ describe("LiquidityTree", () => {
       expect(await getNodeAmount(sTree, 5)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 11)).to.be.equal(ZERO);
     });
+    it.only("add liquidity add/withdraw, removeLimit and remove", async () => {
+      await sTree.nodeAddLiquidity(3); // leaf #8
+      
+      await sTree.nodeAddLiquidity(1); // leaf #9
+      await sTree.nodeWithdraw(9);
+
+      await sTree.nodeAddLiquidity(1); // leaf #10
+      await sTree.nodeWithdraw(10);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (3$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (3$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (3$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+
+      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 1, 3);
+      await checkNodeAmountTo(sTree, 3, 0);
+      await checkNodeAmountTo(sTree, 4, 3);
+      for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 5, 0);
+      await checkNodeAmountTo(sTree, 8, 3);
+      for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, 0);
+
+      // remove from unused leaf #11
+      await sTree.removeLimit(1, 11);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (2$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (2$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (3$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (3$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 1, 2);
+      await checkNodeAmountTo(sTree, 3, 0);
+      await checkNodeAmountTo(sTree, 4, 3);
+      for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 5, 0);
+      await checkNodeAmountTo(sTree, 8, 3);
+      for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, 0);
+
+      expect(await sTree.nodeWithdrawView(10)).to.be.equal(0);
+      expect(await sTree.nodeWithdrawView(8)).to.be.equal(2);
+      
+      // remove from top node
+      await sTree.remove(1);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (1$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (1$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (2$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (3$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      await checkNodeAmountTo(sTree, 1, 1);
+      await checkNodeAmountTo(sTree, 2, 1);
+      await checkNodeAmountTo(sTree, 3, 0);
+      await checkNodeAmountTo(sTree, 4, 2);
+      for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 5, 0);
+      await checkNodeAmountTo(sTree, 8, 3);
+      for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, 0);
+
+      expect(await sTree.nodeWithdrawView(10)).to.be.equal(0);
+      expect(await getWithdrawnAmount(await await sTree.nodeWithdraw(10))).to.be.eq(0);
+      
+      expect(await sTree.nodeWithdrawView(8)).to.be.equal(1);
+      expect(await getWithdrawnAmount(await await sTree.nodeWithdraw(8))).to.be.eq(1);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (0$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      await checkTreeIsEmpty(sTree);
+
+      await sTree.nodeAddLiquidity(1); // leaf #11
+      expect(await sTree.nodeWithdrawView(11)).to.be.equal(1);
+      expect(await getWithdrawnAmount(await await sTree.nodeWithdraw(11))).to.be.eq(1);
+    });
   });
 });
