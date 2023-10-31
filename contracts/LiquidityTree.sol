@@ -156,12 +156,15 @@ contract LiquidityTree {
      */
     function add(uint128 amount) public {
         _checkAmount(amount);
+        uint48 leaf = nextNode - 1;
+        // push changes from top node down to the leaf
+        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
         pushLazy(
             1,
             LIQUIDITYNODES,
             LIQUIDITYLASTNODE,
             LIQUIDITYNODES,
-            nextNode - 1,
+            leaf,
             amount,
             false,
             ++updateId
@@ -177,9 +180,6 @@ contract LiquidityTree {
         if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
             revert IncorrectLeaf();
 
-        // push changes from top node down to the leaf
-        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
-
         if (
             isNeedUpdateWholeLeaves(
                 1,
@@ -191,6 +191,9 @@ contract LiquidityTree {
                 false
             )
         ) leaf = nextNode - 1; // push to the [LIQUIDITYNODES, leaf]
+
+        // push changes from top node down to the leaf
+        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
 
         pushLazy(
             1,
@@ -213,9 +216,6 @@ contract LiquidityTree {
         if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
             revert IncorrectLeaf();
         if (treeNode[1].amount >= amount) {
-            // push changes from top node down to the leaf
-            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
-
             if (
                 isNeedUpdateWholeLeaves(
                     1,
@@ -227,6 +227,9 @@ contract LiquidityTree {
                     true
                 )
             ) leaf = nextNode - 1; // push to the [LIQUIDITYNODES, leaf]
+
+            // push changes from top node down to the leaf
+            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
 
             pushLazy(
                 1,
@@ -248,12 +251,15 @@ contract LiquidityTree {
     function remove(uint128 amount) public {
         _checkAmount(amount);
         if (treeNode[1].amount >= amount) {
+            uint48 leaf = nextNode - 1;
+            // push changes from top node down to the leaf
+            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
             pushLazy(
                 1,
                 LIQUIDITYNODES,
                 LIQUIDITYLASTNODE,
                 LIQUIDITYNODES,
-                nextNode - 1,
+                leaf,
                 amount,
                 true,
                 ++updateId

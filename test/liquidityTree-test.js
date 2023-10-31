@@ -42,7 +42,7 @@ const checkNodeAmountTo = async (sTree, nodeNumber, tokens) => {
 
 describe("LiquidityTree", () => {
   let sTree, firstLeaf;
-  describe.skip("Big tree", async () => {
+  describe("Big tree", async () => {
     beforeEach(async () => {
       sTree = await prepareTree(ethers, BIG_TREE_LEAFS);
       firstLeaf = await sTree.nextNode();
@@ -2330,14 +2330,14 @@ describe("LiquidityTree", () => {
         +--------------------------------------------+--------------------------------------------+
         |                      2 (1$)                |                      3 (0$)                |
         +-------------+----------+---------+---------+-------------+----------+---------+---------+
-        |           4 (2$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        |           4 (1$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
         +-------------+----------+---------+---------+-------------+----------+---------+---------+
         |    8 (3$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
         +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
       await checkNodeAmountTo(sTree, 1, 1);
       await checkNodeAmountTo(sTree, 2, 1);
       await checkNodeAmountTo(sTree, 3, 0);
-      await checkNodeAmountTo(sTree, 4, 2);
+      await checkNodeAmountTo(sTree, 4, 1);
       for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 5, 0);
       await checkNodeAmountTo(sTree, 8, 3);
       for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, 0);
