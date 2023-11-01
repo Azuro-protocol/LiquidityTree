@@ -1,11 +1,23 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.16;
-
+import "hardhat/console.sol";
 contract LiquidityTree {
     struct Node {
         uint64 updateId; // last update number
         uint128 amount; // node amount
+    }
+
+    struct UpdateNode {
+        uint48 node;
+        uint48 begin;
+        uint48 end;
+        uint48 l;
+        uint48 r;
+        uint128 amount;
+        uint128 updatedValue;
+        bool isSub;
+        uint64 updateId_;
     }
 
     uint40 constant DECIMALS = 10**12;
@@ -157,17 +169,18 @@ contract LiquidityTree {
     function add(uint128 amount) public {
         _checkAmount(amount);
         uint48 leaf = nextNode - 1;
-        // push changes from top node down to the leaf
-        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
         pushLazy(
-            1,
-            LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
-            LIQUIDITYNODES,
-            leaf,
-            amount,
-            false,
-            ++updateId
+            UpdateNode(
+                1,
+                LIQUIDITYNODES,
+                LIQUIDITYLASTNODE,
+                LIQUIDITYNODES,
+                leaf,
+                amount,
+                treeNode[1].amount,
+                false,
+                ++updateId
+            )
         );
     }
 
@@ -192,18 +205,18 @@ contract LiquidityTree {
             )
         ) leaf = nextNode - 1; // push to the [LIQUIDITYNODES, leaf]
 
-        // push changes from top node down to the leaf
-        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
-
         pushLazy(
-            1,
-            LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
-            LIQUIDITYNODES,
-            leaf,
-            amount,
-            false,
-            ++updateId
+            UpdateNode(
+                1,
+                LIQUIDITYNODES,
+                LIQUIDITYLASTNODE,
+                LIQUIDITYNODES,
+                leaf,
+                amount,
+                treeNode[1].amount,
+                false,
+                ++updateId
+            )
         );
     }
 
@@ -228,18 +241,18 @@ contract LiquidityTree {
                 )
             ) leaf = nextNode - 1; // push to the [LIQUIDITYNODES, leaf]
 
-            // push changes from top node down to the leaf
-            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
-
             pushLazy(
-                1,
-                LIQUIDITYNODES,
-                LIQUIDITYLASTNODE,
-                LIQUIDITYNODES,
-                leaf,
-                amount,
-                true,
-                ++updateId
+                UpdateNode(
+                    1,
+                    LIQUIDITYNODES,
+                    LIQUIDITYLASTNODE,
+                    LIQUIDITYNODES,
+                    leaf,
+                    amount,
+                    treeNode[1].amount,
+                    true,
+                    ++updateId
+                )
             );
         }
     }
@@ -252,17 +265,18 @@ contract LiquidityTree {
         _checkAmount(amount);
         if (treeNode[1].amount >= amount) {
             uint48 leaf = nextNode - 1;
-            // push changes from top node down to the leaf
-            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
             pushLazy(
-                1,
-                LIQUIDITYNODES,
-                LIQUIDITYLASTNODE,
-                LIQUIDITYNODES,
-                leaf,
-                amount,
-                true,
-                ++updateId
+                UpdateNode(
+                    1,
+                    LIQUIDITYNODES,
+                    LIQUIDITYLASTNODE,
+                    LIQUIDITYNODES,
+                    leaf,
+                    amount,
+                    treeNode[1].amount,
+                    true,
+                    ++updateId
+                )
             );
         }
     }
@@ -348,86 +362,142 @@ contract LiquidityTree {
 
     /**
      * @dev push lazy (lazy propagation) amount value from top node to child nodes contained leafs from 0 to r
-     * @param node - start from node
-     * @param begin - node left element
-     * @param end - node right element
-     * @param l - left leaf child
-     * @param r - right leaf child
-     * @param amount - amount to add/reduce stored amounts
-     * @param isSub - true means negative to reduce
-     * @param updateId_ update number
+     * @param updateNode - update node params
      */
-    function pushLazy(
-        uint48 node,
-        uint48 begin,
-        uint48 end,
-        uint48 l,
-        uint48 r,
-        uint128 amount,
-        bool isSub,
-        uint64 updateId_
-    ) internal {
-        if ((begin == l && end == r) || (begin == end)) {
+    function pushLazy(UpdateNode memory updateNode) internal {
+        uint128 setValue;
+        if (updateNode.isSub) {
+            setValue = updateNode.updatedValue >= updateNode.amount
+                ? updateNode.updatedValue - updateNode.amount
+                : 0;
+        } else {
+            setValue = updateNode.updatedValue + updateNode.amount;
+        }
+        console.log("node %s updatedValue %s amount %s", updateNode.node, updateNode.updatedValue, updateNode.amount);
+
+        if (
+            (updateNode.begin == updateNode.l &&
+                updateNode.end == updateNode.r) ||
+            (updateNode.begin == updateNode.end)
+        ) {
             // if node leafs equal to leaf interval then stop
-            changeAmount(node, amount, isSub, updateId_);
+            setAmount(updateNode.node, setValue, updateNode.updateId_);
             return;
         }
 
-        uint48 mid = (begin + end) / 2;
+        uint48 mid = (updateNode.begin + updateNode.end) / 2;
 
-        if (begin <= l && l <= mid) {
-            if (begin <= r && r <= mid) {
+        // calc old lazy updates
+        uint256 lAmountOld = treeNode[updateNode.node * 2].amount;
+        uint256 rAmountOld = treeNode[updateNode.node * 2 + 1].amount;
+        uint256 sumAmountsOld = lAmountOld + rAmountOld;
+
+        uint128 lAmountNew = (sumAmountsOld > 0)
+            ? (
+                uint128(
+                    (updateNode.updatedValue * lAmountOld * DECIMALS) /
+                        sumAmountsOld
+                )
+            ) / DECIMALS
+            : 0;
+        uint128 rAmountNew = updateNode.updatedValue - lAmountNew;
+
+        console.log("lAmountNew %s rAmountNew %s", lAmountNew, rAmountNew);
+
+        if (updateNode.begin <= updateNode.l && updateNode.l <= mid) {
+            if (updateNode.begin <= updateNode.r && updateNode.r <= mid) {
                 // [l,r] in [begin,mid] - all leafs in left child
-                pushLazy(node * 2, begin, mid, l, r, amount, isSub, updateId_);
+                // write old lazy update to right child
+                setAmount(
+                    updateNode.node * 2 + 1,
+                    rAmountNew,
+                    updateNode.updateId_
+                );
+
+                // write old lazy update and new update to left child
+                pushLazy(
+                    UpdateNode(
+                        updateNode.node * 2,
+                        updateNode.begin,
+                        mid,
+                        updateNode.l,
+                        updateNode.r,
+                        updateNode.amount,
+                        lAmountNew,
+                        updateNode.isSub,
+                        updateNode.updateId_
+                    )
+                );
             } else {
-                uint256 lAmount = treeNode[node * 2].amount;
+                // apply new update
+                uint256 lAmount = lAmountNew;
                 // get right amount excluding unused leaves
-                uint256 rAmount = treeNode[node * 2 + 1].amount -
-                    getLeavesAmount(node * 2 + 1, mid + 1, end, r + 1, end);
+                uint256 rAmount = rAmountNew -
+                    getLeavesAmount(
+                        updateNode.node * 2 + 1,
+                        mid + 1,
+                        updateNode.end,
+                        updateNode.r + 1,
+                        updateNode.end
+                    );
                 uint256 sumAmounts = lAmount + rAmount;
                 if (sumAmounts == 0) return;
                 uint128 forLeftAmount = uint128(
-                    ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
+                    ((updateNode.amount * lAmount * DECIMALS) / sumAmounts) /
+                        DECIMALS
                 );
 
                 // l in [begin,mid] - part in left child
                 pushLazy(
-                    node * 2,
-                    begin,
-                    mid,
-                    l,
-                    mid,
-                    forLeftAmount,
-                    isSub,
-                    updateId_
+                    UpdateNode(
+                        updateNode.node * 2,
+                        updateNode.begin,
+                        mid,
+                        updateNode.l,
+                        mid,
+                        forLeftAmount,
+                        lAmountNew,
+                        updateNode.isSub,
+                        updateNode.updateId_
+                    )
                 );
 
                 // r in [mid+1,end] - part in right child
                 pushLazy(
-                    node * 2 + 1,
-                    mid + 1,
-                    end,
-                    mid + 1,
-                    r,
-                    amount - forLeftAmount,
-                    isSub,
-                    updateId_
+                    UpdateNode(
+                        updateNode.node * 2 + 1,
+                        mid + 1,
+                        updateNode.end,
+                        mid + 1,
+                        updateNode.r,
+                        updateNode.amount - forLeftAmount,
+                        rAmountNew,
+                        updateNode.isSub,
+                        updateNode.updateId_
+                    )
                 );
             }
         } else {
             // [l,r] in [mid+1,end] - all leafs in right child
+            // write old lazy update to left child
+            setAmount(updateNode.node * 2, lAmountNew, updateNode.updateId_);
+
+            // write old lazy update and new update to the right child
             pushLazy(
-                node * 2 + 1,
-                mid + 1,
-                end,
-                l,
-                r,
-                amount,
-                isSub,
-                updateId_
+                UpdateNode(
+                    updateNode.node * 2 + 1,
+                    mid + 1,
+                    updateNode.end,
+                    updateNode.l,
+                    updateNode.r,
+                    updateNode.amount,
+                    rAmountNew,
+                    updateNode.isSub,
+                    updateNode.updateId_
+                )
             );
         }
-        changeAmount(node, amount, isSub, updateId_);
+        setAmount(updateNode.node, setValue, updateNode.updateId_);
     }
 
     /**

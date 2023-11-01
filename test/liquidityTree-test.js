@@ -1909,7 +1909,7 @@ describe("LiquidityTree", () => {
       expect(await getWithdrawnAmount(tx5)).to.be.equal(withdrawAmount5);
     });
   });
-  describe("Example tree (4 leaves) fair distribution", async () => {
+  describe.only("Example tree (4 leaves) fair distribution", async () => {
     before(async () => {
       sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS);
     });
@@ -2302,6 +2302,7 @@ describe("LiquidityTree", () => {
       for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, 0);
 
       // remove from unused leaf #11
+      console.log("----------------------- removeLimit(1, 11); ------------------------------------")
       await sTree.removeLimit(1, 11);
       /*+-----------------------------------------------------------------------------------------+
         |                                          1 (2$)                                         |
@@ -2312,7 +2313,9 @@ describe("LiquidityTree", () => {
         +-------------+----------+---------+---------+-------------+----------+---------+---------+
         |    8 (3$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
         +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
-      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 1, 2);
+      //for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 1, 2);
+      await checkNodeAmountTo(sTree, 1, 2);
+      await checkNodeAmountTo(sTree, 2, 2);
       await checkNodeAmountTo(sTree, 3, 0);
       await checkNodeAmountTo(sTree, 4, 3); // not updated because of lazy
       for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 5, 0);
@@ -2323,6 +2326,7 @@ describe("LiquidityTree", () => {
       expect(await sTree.nodeWithdrawView(10)).to.be.equal(0);
 
       // remove from top node
+      console.log("------------------------------ await sTree.remove(1); --------------------------");
       await sTree.remove(1);
       //await sTree.removeLimit(1, 11);
       /*+-----------------------------------------------------------------------------------------+
