@@ -159,6 +159,7 @@ contract LiquidityTree {
         uint48 leaf = nextNode - 1;
         // push changes from top node down to the leaf
         push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+
         pushLazy(
             1,
             LIQUIDITYNODES,
@@ -254,6 +255,7 @@ contract LiquidityTree {
             uint48 leaf = nextNode - 1;
             // push changes from top node down to the leaf
             push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+
             pushLazy(
                 1,
                 LIQUIDITYNODES,
