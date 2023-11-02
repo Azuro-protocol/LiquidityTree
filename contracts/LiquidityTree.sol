@@ -156,9 +156,14 @@ contract LiquidityTree {
      */
     function add(uint128 amount) public {
         _checkAmount(amount);
-        uint48 leaf = nextNode - 1;
-        // push changes from top node down to the leaf
-        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        uint48 leaf = LIQUIDITYLASTNODE;
+
+        // if updates
+        if (treeNode[1].amount != 0) {
+            leaf = nextNode - 1;
+            // push changes from top node down to the leaf
+            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        }
 
         pushLazy(
             1,
@@ -191,10 +196,12 @@ contract LiquidityTree {
                 amount,
                 false
             )
-        ) leaf = nextNode - 1; // push to the [LIQUIDITYNODES, leaf]
-
-        // push changes from top node down to the leaf
-        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        ) {
+            leaf = LIQUIDITYLASTNODE; // push to the [LIQUIDITYNODES, LIQUIDITYLASTNODE]
+        } else {
+            // push changes from top node down to the leaf
+            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        }
 
         pushLazy(
             1,
@@ -227,10 +234,12 @@ contract LiquidityTree {
                     amount,
                     true
                 )
-            ) leaf = nextNode - 1; // push to the [LIQUIDITYNODES, leaf]
-
-            // push changes from top node down to the leaf
-            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+            ) {
+                leaf = LIQUIDITYLASTNODE; // push to the [LIQUIDITYNODES, LIQUIDITYLASTNODE]
+            } else {
+                // push changes from top node down to the leaf
+                push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+            }
 
             pushLazy(
                 1,
@@ -459,8 +468,6 @@ contract LiquidityTree {
             (isSub && treeNode[node].amount < amount) ||
             (!isSub && treeNode[node].amount == 0)
         ) return true;
-
-        if ((node * 2) >= LIQUIDITYNODES) return false; // leaves level reached
 
         // if node leafs equal to leaf interval then stop
         if ((begin == l && end == r) || (begin == end)) return false;
