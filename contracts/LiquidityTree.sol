@@ -301,14 +301,15 @@ contract LiquidityTree {
         uint48 rChild = node * 2 + 1;
         uint128 amount = treeNode[node].amount;
         uint256 lAmount = treeNode[lChild].amount;
-        uint256 sumAmounts = lAmount + treeNode[rChild].amount;
+        uint256 rAmount = treeNode[rChild].amount;
+        uint256 sumAmounts = lAmount + rAmount;
         uint128 setLAmount = sumAmounts == 0
             ? 0
             : uint128((amount * lAmount) / sumAmounts);
 
-        // update left and right child
+        // update left and right childs if non-zero
         setAmount(lChild, setLAmount, updateId_);
-        setAmount(rChild, amount - setLAmount, updateId_);
+        if (rAmount > 0) setAmount(rChild, amount - setLAmount, updateId_);
 
         uint48 mid = (begin + end) / 2;
 
@@ -343,6 +344,7 @@ contract LiquidityTree {
         uint48 lChild = node * 2;
         uint48 rChild = node * 2 + 1;
         uint256 lAmount = treeNode[lChild].amount;
+        uint256 rAmount = treeNode[rChild].amount;
         uint256 sumAmounts = lAmount + treeNode[rChild].amount;
         uint128 setLAmount = sumAmounts == 0
             ? 0
@@ -353,7 +355,10 @@ contract LiquidityTree {
         if (begin <= leaf && leaf <= mid) {
             return pushView(lChild, begin, mid, leaf, setLAmount);
         } else {
-            return pushView(rChild, mid + 1, end, leaf, amount - setLAmount);
+            return
+                (rAmount == 0)
+                    ? 0
+                    : pushView(rChild, mid + 1, end, leaf, amount - setLAmount);
         }
     }
 
