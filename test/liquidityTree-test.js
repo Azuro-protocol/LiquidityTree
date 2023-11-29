@@ -942,21 +942,21 @@ describe("LiquidityTree", () => {
         +---------------------------------------------------------------------------------------------------------------------------------------------+
         |                                                                     1(5)                                                                    |
         +-----------------------------------------------------------------------+---------------------------------------------------------------------+
-        |                                  2(10)                                |                                       3                             |
+        |                                  2(5)                                 |                                       3                             |
         +-----------------------------------+-----------------------------------+---------------------------------------+-----------------------------+
-        |              4(10)                |                 5                 |                   6                   |                   7         |
+        |               4(5)                |                 5                 |                   6                   |                   7         |
         +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
-        |     8(10)       |        9        |       10        |       11        |        12         |        13         |        14         |    15   |
+        |      8(5)       |        9        |       10        |       11        |        12         |        13         |        14         |    15   |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
         | 16(0)  | 17(10) |   18   |    19  |    20  |    21  |    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+*/
 
       await checkNodeAmountTo(sTree, 1, TOKENS_5);
-      await checkNodeAmountTo(sTree, 2, TOKENS_10);
+      await checkNodeAmountTo(sTree, 2, TOKENS_5);
       await checkNodeAmountTo(sTree, 3, ZERO);
-      await checkNodeAmountTo(sTree, 4, TOKENS_10);
+      await checkNodeAmountTo(sTree, 4, TOKENS_5);
       for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 5, ZERO);
-      await checkNodeAmountTo(sTree, 8, TOKENS_10);
+      await checkNodeAmountTo(sTree, 8, TOKENS_5);
       for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, ZERO);
       await checkNodeAmountTo(sTree, 17, TOKENS_10);
       expect(await sTree.nodeWithdrawView(17)).to.be.eq(TOKENS_5);
@@ -967,21 +967,21 @@ describe("LiquidityTree", () => {
         +---------------------------------------------------------------------------------------------------------------------------------------------+
         |                                                                     1(0)                                                                    |
         +-----------------------------------------------------------------------+---------------------------------------------------------------------+
-        |                                  2(10)                                |                                       3                             |
+        |                                  2(0)                                 |                                       3                             |
         +-----------------------------------+-----------------------------------+---------------------------------------+-----------------------------+
-        |              4(10)                |                 5                 |                   6                   |                   7         |
+        |               4(0)                |                 5                 |                   6                   |                   7         |
         +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
-        |     8(10)       |        9        |       10        |       11        |        12         |        13         |        14         |    15   |
+        |      8(0)       |        9        |       10        |       11        |        12         |        13         |        14         |    15   |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
         | 16(0)  | 17(10) |   18   |    19  |    20  |    21  |    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+*/
 
       await checkNodeAmountTo(sTree, 1, ZERO);
-      await checkNodeAmountTo(sTree, 2, TOKENS_10);
+      await checkNodeAmountTo(sTree, 2, ZERO);
       await checkNodeAmountTo(sTree, 3, ZERO);
-      await checkNodeAmountTo(sTree, 4, TOKENS_10);
+      await checkNodeAmountTo(sTree, 4, ZERO);
       for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 5, ZERO);
-      await checkNodeAmountTo(sTree, 8, TOKENS_10);
+      await checkNodeAmountTo(sTree, 8, ZERO);
       for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, ZERO);
 
       await checkNodeAmountTo(sTree, 17, TOKENS_10);
@@ -1046,18 +1046,18 @@ describe("LiquidityTree", () => {
         +---------------------------------------------------------------------------------------------------------------------------------------------+
         |                                                                     1(10)                                                                   |
         +-----------------------------------------------------------------------+---------------------------------------------------------------------+
-        |                                  2(20)                                |                                       3                             |
+        |                                  2(10)                                |                                       3                             |
         +-----------------------------------+---------------+-----------------------------------------------------------+-----------------------------+
-        |              4(20)                |                 5                 |                   6                   |                   7         |
+        |              4(10)                |                 5                 |                   6                   |                   7         |
         +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
         |     8(0)        |        9(20)    |       10        |       11        |        12         |        13         |        14         |    15   |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
         | 16(0)  | 17(0)  | 18(10) | 19(10) |    20  |    21  |    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+*/
       await checkNodeAmountTo(sTree, 1, TOKENS_10);
-      await checkNodeAmountTo(sTree, 2, TOKENS_20);
+      await checkNodeAmountTo(sTree, 2, TOKENS_10);
       await checkNodeAmountTo(sTree, 3, ZERO);
-      await checkNodeAmountTo(sTree, 4, TOKENS_20);
+      await checkNodeAmountTo(sTree, 4, TOKENS_10);
       for (const i of Array(4).keys()) await checkNodeAmountTo(sTree, i + 5, ZERO);
       await checkNodeAmountTo(sTree, 9, TOKENS_20);
       for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 10, ZERO);
@@ -1141,22 +1141,22 @@ describe("LiquidityTree", () => {
         +---------------------------------------------------------------------------------------------------------------------------------------------+
         |                                                                     1(20)                                                                   |
         +-----------------------------------------------------------------------+---------------------------------------------------------------------+
-        |                                  2(30)                                |                                       3                             |
+        |                                  2(20)                                |                                       3                             |
         +-----------------------------------+-----------------------------------+---------------------------------------+-----------------------------+
-        |              4(6)                 |              5(24)                |                   6                   |                   7         |
+        |              4(4)                 |              5(16)                |                   6                   |                   7         |
         +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
-        |     8(0)        |       9(6)      |    10(24)       |       11        |        12         |        13         |        14         |    15   |
+        |     8(0)        |       9(6)      |    10(16)       |       11        |        12         |        13         |        14         |    15   |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
         | 16(0)  | 17(0)  |  18(3) | 19(3)  | 20(12) |  21(12)|    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+*/
       await checkNodeAmountTo(sTree, 1, TOKENS_20);
-      await checkNodeAmountTo(sTree, 2, TOKENS_30);
+      await checkNodeAmountTo(sTree, 2, TOKENS_20);
       await checkNodeAmountTo(sTree, 3, ZERO);
-      await checkNodeAmountTo(sTree, 4, tokens(6));
-      await checkNodeAmountTo(sTree, 5, tokens(24));
+      await checkNodeAmountTo(sTree, 4, tokens(4));
+      await checkNodeAmountTo(sTree, 5, tokens(16));
       for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 6, ZERO);
       await checkNodeAmountTo(sTree, 9, tokens(6));
-      await checkNodeAmountTo(sTree, 10, tokens(24));
+      await checkNodeAmountTo(sTree, 10, tokens(16));
       for (const i of Array(6).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
       for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 18, tokens(3));
       for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 20, tokens(12));
@@ -1251,24 +1251,24 @@ describe("LiquidityTree", () => {
         +---------------------------------------------------------------------------------------------------------------------------------------------+
         |                                                                     1(40)                                                                   |
         +-----------------------------------------------------------------------+---------------------------------------------------------------------+
-        |                                  2(30)                                |                                       3                             |
+        |                                  2(40)                                |                                       3                             |
         +-----------------------------------+-----------------------------------+---------------------------------------+-----------------------------+
-        |              4(6)                 |              5(24)                |                   6                   |                   7         |
+        |              4(8)                 |              5(32)                |                   6                   |                   7         |
         +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+---------+
-        |     8(0)        |       9(6)      |    10(24)       |       11        |        12         |        13         |        14         |    15   |
+        |     8(0)        |       9(6)      |    10(32)       |       11        |        12         |        13         |        14         |    15   |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+
         | 16(0)  | 17(0)  |  18(3) | 19(3)  | 20(12) |  21(12)|    22  |    23  |    24   |    25   |    26   |    27   |    28   |    29   | 30 | 31 |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+----+----+ 
       */
 
       await checkNodeAmountTo(sTree, 1, TOKENS_40);
-      await checkNodeAmountTo(sTree, 2, TOKENS_30);
+      await checkNodeAmountTo(sTree, 2, TOKENS_40);
       await checkNodeAmountTo(sTree, 3, ZERO);
-      await checkNodeAmountTo(sTree, 4, tokens(6));
-      await checkNodeAmountTo(sTree, 5, tokens(24));
+      await checkNodeAmountTo(sTree, 4, tokens(8));
+      await checkNodeAmountTo(sTree, 5, tokens(32));
       for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 6, ZERO);
       await checkNodeAmountTo(sTree, 9, tokens(6));
-      await checkNodeAmountTo(sTree, 10, tokens(24));
+      await checkNodeAmountTo(sTree, 10, tokens(32));
       for (const i of Array(6).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
       await checkNodeAmountTo(sTree, 18, tokens(3));
       await checkNodeAmountTo(sTree, 19, tokens(3));
@@ -1530,26 +1530,28 @@ describe("LiquidityTree", () => {
         +-----------------------------------------------------------------------------------------------------------------------------------------------------+
         |                                                                    1(120)                                                                           |
         +-----------------------------------------------------------------------+-----------------------------------------------------------------------------+
-        |                                   2(0)                                |                                     3(60)                                   |
+        |                                   2(0)                                |                                     3(120)                                  |
         +-----------------------------------+-----------------------------------+---------------------------------------+-------------------------------------+
-        |               4(0)                |               5(0)                |                 6(30)                 |                 7(30)               |
+        |               4(0)                |               5(0)                |                 6(60)                 |                 7(60)               |
         +-----------------+-----------------+-----------------+-----------------+-------------------+-------------------+-------------------+-----------------+
-        |      8(0)       |       9(0)      |     10(0)       |      11(0)      |      12(10)       |      13(20)       |      14(20)       |      15(10)     |
+        |      8(0)       |       9(0)      |     10(0)       |      11(0)      |      12(10)       |      13(20)       |      14(20)       |      15(20)     |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+
-        | 16(0)  | 17(0)  |  18(0) | 19(0)  | 20(0)  |  21(0) |  22(0) |  23(0) |  24(0)  |  25(10) |  26(10) |  27(10) | 28(10)  | 29(10)  | 30(10) | 31(0)  |
+        | 16(0)  | 17(0)  |  18(0) | 19(0)  | 20(0)  |  21(0) |  22(0) |  23(0) |  24(0)  |  25(10) |  26(10) |  27(10) | 28(10)  | 29(10)  | 30(20) | 31(0)  |
         +--------+--------+--------+--------+--------+--------+--------+--------+---------+---------+---------+---------+---------+---------+--------+--------+*/
       await checkNodeAmountTo(sTree, 1, tokens(120));
       await checkNodeAmountTo(sTree, 2, ZERO);
-      await checkNodeAmountTo(sTree, 3, TOKENS_60);
+      await checkNodeAmountTo(sTree, 3, tokens(120));
       await checkNodeAmountTo(sTree, 4, ZERO);
       await checkNodeAmountTo(sTree, 5, ZERO);
-      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 6, TOKENS_30);
+      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 6, TOKENS_60);
       for (const i of Array(4).keys()) await checkNodeAmountTo(sTree, i + 8, ZERO);
       await checkNodeAmountTo(sTree, 12, TOKENS_10);
-      for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 13, TOKENS_20);
-      await checkNodeAmountTo(sTree, 15, TOKENS_10);
+      await checkNodeAmountTo(sTree, 13, TOKENS_20);
+      await checkNodeAmountTo(sTree, 14, TOKENS_40);
+      await checkNodeAmountTo(sTree, 15, TOKENS_20);
       for (const i of Array(9).keys()) await checkNodeAmountTo(sTree, i + 16, ZERO);
-      for (const i of Array(6).keys()) await checkNodeAmountTo(sTree, i + 25, TOKENS_10);
+      for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 25, TOKENS_10);
+      await checkNodeAmountTo(sTree, 30, TOKENS_20);
       await checkNodeAmountTo(sTree, 31, ZERO);
 
       // All add distributed to non zero leaves
@@ -1714,6 +1716,13 @@ describe("LiquidityTree", () => {
     it("nodeAddLiquidity(100$)", async () => {
       await sTree.nodeAddLiquidity(TOKENS_100);
       await sTree.nodeAddLiquidity(TOKENS_200);
+      /*+---------------------------------------------+
+        |                    1 (300$)                 |
+        +-------------------------+-------------------+
+        |          2 (300$)       |      3 (0$)       |
+        +-------------+-----------+---------+---------+
+        |   4 (100$)  |  5 (200$) |  6 (0$) |  7 (0$) |
+        +-------------+-----------+---------+---------+*/
       expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_300);
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_300);
       expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
@@ -1721,12 +1730,26 @@ describe("LiquidityTree", () => {
     });
     it("remove(30$) and addliquidity", async () => {
       await sTree.remove(TOKENS_30);
+      /*+---------------------------------------------+
+        |                    1 (270$)                 |
+        +-------------------------+-------------------+
+        |          2 (270$)       |      3 (0$)       |
+        +-------------+-----------+---------+---------+
+        |   4 (100$)  |  5 (200$) |  6 (0$) |  7 (0$) |
+        +-------------+-----------+---------+---------+*/
       expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_270);
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_270);
       expect(await getNodeAmount(sTree, 4)).to.be.equal(TOKENS_100);
       expect(await getNodeAmount(sTree, 5)).to.be.equal(TOKENS_200);
 
       await sTree.nodeAddLiquidity(TOKENS_300);
+      /*+----------------------------------------------+
+        |                    1 (570$)                  |
+        +-------------------------+--------------------+
+        |          2 (270$)       |     3 (300$)       |
+        +-------------+-----------+----------+---------+
+        |   4 (100$)  |  5 (200$) | 6 (300$) |  7 (0$) |
+        +-------------+-----------+---------+---------+*/
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(570));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_270);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
@@ -1736,6 +1759,13 @@ describe("LiquidityTree", () => {
     });
     it("addLimit(15$, #5)", async () => {
       await sTree.addLimit(tokens(15), 5);
+      /*+----------------------------------------------+
+        |                    1 (585$)                  |
+        +-------------------------+--------------------+
+        |          2 (285$)       |     3 (300$)       |
+        +-------------+-----------+----------+---------+
+        |   4 (100$)  |  5 (200$) | 6 (300$) |  7 (0$) |
+        +-------------+-----------+---------+---------+*/
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(585));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(tokens(285));
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
@@ -1746,6 +1776,13 @@ describe("LiquidityTree", () => {
     it("nodeWithdraw(4)", async () => {
       let withdrawAmount4 = await sTree.nodeWithdrawView(4);
       let tx4 = await sTree.nodeWithdraw(4);
+      /*+----------------------------------------------+
+        |                    1 (490$)                  |
+        +-------------------------+--------------------+
+        |          2 (190$)       |     3 (300$)       |
+        +-------------+-----------+----------+---------+
+        |    4 (0$)   |  5 (200$) | 6 (300$) |  7 (0$) |
+        +-------------+-----------+---------+---------+*/
       expect(await getNodeAmount(sTree, 1)).to.be.equal(tokens(490));
       expect(await getNodeAmount(sTree, 2)).to.be.equal(TOKENS_190);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
@@ -1758,6 +1795,13 @@ describe("LiquidityTree", () => {
     it("nodeWithdraw(5)", async () => {
       let withdrawAmount5 = await sTree.nodeWithdrawView(5);
       let tx5 = await sTree.nodeWithdraw(5);
+      /*+----------------------------------------------+
+        |                    1 (300$)                  |
+        +-------------------------+--------------------+
+        |           2 (0$)        |     3 (300$)       |
+        +-------------+-----------+----------+---------+
+        |    4 (0$)   |   5 (0$)  | 6 (300$) |  7 (0$) |
+        +-------------+-----------+---------+---------+*/
       expect(await getNodeAmount(sTree, 1)).to.be.equal(TOKENS_300);
       expect(await getNodeAmount(sTree, 2)).to.be.equal(ZERO);
       expect(await getNodeAmount(sTree, 3)).to.be.equal(TOKENS_300);
@@ -2181,6 +2225,7 @@ describe("LiquidityTree", () => {
         +-------------+----------+---------+---------+-------------+----------+---------+---------+
         |    8 (3$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
         +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      //for (const i of Array(16).keys()) console.log(i+1, await getNodeAmount(sTree, i+1));
       await checkNodeAmountTo(sTree, 1, 1);
       await checkNodeAmountTo(sTree, 2, 1);
       await checkNodeAmountTo(sTree, 3, 0);

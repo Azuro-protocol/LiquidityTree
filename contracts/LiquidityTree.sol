@@ -151,19 +151,16 @@ contract LiquidityTree {
     }
 
     /**
-     * @dev add amount to whole tree, starting from top node #1
+     * @dev add amount to whole tree (all used leaves), starting from top node #1
      * @param amount value to add
      */
     function add(uint128 amount) public {
         _checkAmount(amount);
-        uint48 leaf = LIQUIDITYLASTNODE;
+        uint48 leaf = nextNode - 1;
 
-        // if updates
-        if (treeNode[1].amount != 0) {
-            leaf = nextNode - 1;
-            // push changes from top node down to the leaf
+        // push changes from top node down to the leaf
+        if (treeNode[1].amount != 0)
             push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
-        }
 
         pushLazy(
             1,
@@ -197,7 +194,7 @@ contract LiquidityTree {
                 false
             )
         ) {
-            leaf = LIQUIDITYLASTNODE; // push to the [LIQUIDITYNODES, LIQUIDITYLASTNODE]
+            leaf = nextNode - 1; // push to the all used leaves [LIQUIDITYNODES, nextNode - 1]
         } else {
             // push changes from top node down to the leaf
             push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
@@ -235,7 +232,7 @@ contract LiquidityTree {
                     true
                 )
             ) {
-                leaf = LIQUIDITYLASTNODE; // push to the [LIQUIDITYNODES, LIQUIDITYLASTNODE]
+                leaf = nextNode - 1; // push to the all used leaves [LIQUIDITYNODES, nextNode - 1]
             } else {
                 // push changes from top node down to the leaf
                 push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
@@ -255,7 +252,7 @@ contract LiquidityTree {
     }
 
     /**
-     * @dev remove amount from whole tree, starting from top node #1
+     * @dev remove amount from whole tree (all used leaves), starting from top node #1
      * @param amount value to removeamount
      */
     function remove(uint128 amount) public {
@@ -308,7 +305,7 @@ contract LiquidityTree {
             : uint128((amount * lAmount) / sumAmounts);
 
         // update left and right childs if non-zero
-        setAmount(lChild, setLAmount, updateId_);
+        if (lAmount > 0) setAmount(lChild, setLAmount, updateId_);
         if (rAmount > 0) setAmount(rChild, amount - setLAmount, updateId_);
 
         uint48 mid = (begin + end) / 2;
@@ -353,7 +350,10 @@ contract LiquidityTree {
         uint48 mid = (begin + end) / 2;
 
         if (begin <= leaf && leaf <= mid) {
-            return pushView(lChild, begin, mid, leaf, setLAmount);
+            return
+                (lAmount == 0)
+                    ? 0
+                    : pushView(lChild, begin, mid, leaf, setLAmount);
         } else {
             return
                 (rAmount == 0)
@@ -385,7 +385,8 @@ contract LiquidityTree {
     ) internal {
         if ((begin == l && end == r) || (begin == end)) {
             // if node leafs equal to leaf interval then stop
-            changeAmount(node, amount, isSub, updateId_);
+            if (treeNode[node].amount > 0)
+                changeAmount(node, amount, isSub, updateId_);
             return;
         }
 
@@ -443,7 +444,8 @@ contract LiquidityTree {
                 updateId_
             );
         }
-        changeAmount(node, amount, isSub, updateId_);
+        if (node == 1 || (treeNode[node].amount > 0))
+            changeAmount(node, amount, isSub, updateId_);
     }
 
     /**
