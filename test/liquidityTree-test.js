@@ -2200,13 +2200,13 @@ describe("LiquidityTree", () => {
         +--------------------------------------------+--------------------------------------------+
         |                      2 (2$)                |                      3 (0$)                |
         +-------------+----------+---------+---------+-------------+----------+---------+---------+
-        |           4 (3$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        |           4 (2$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
         +-------------+----------+---------+---------+-------------+----------+---------+---------+
         |    8 (3$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
         +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
       for (const i of Array(2).keys()) await checkNodeAmountTo(sTree, i + 1, 2);
       await checkNodeAmountTo(sTree, 3, 0);
-      await checkNodeAmountTo(sTree, 4, 3); // not updated because of lazy
+      await checkNodeAmountTo(sTree, 4, 2);
       for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 5, 0);
       await checkNodeAmountTo(sTree, 8, 3);
       for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 9, 0);
@@ -2390,6 +2390,56 @@ describe("LiquidityTree", () => {
       expect(await sTree.nodeWithdrawView(9)).to.be.eq(HUNDRED);
       expect(await getWithdrawnAmount(await sTree.nodeWithdraw(9))).to.be.eq(HUNDRED);
       for (const i of Array(16).keys()) await checkNodeAmountTo(sTree, i + 1, 0);
+    });
+    it("leaf #8 +2, removeLimit(2, #8-#9), leaf #9 +100, -100", async () => {
+      const HUNDRED = 100;
+      await sTree.nodeAddLiquidity(2); // leaf #8
+      await sTree.removeLimit(2, 9); // #9 not used
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (0$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      for (const i of Array(14).keys()) await checkNodeAmountTo(sTree, i + 1, 0);
+
+      await sTree.nodeAddLiquidity(HUNDRED); // leaf #9
+      expect(await sTree.nodeWithdrawView(9)).to.be.eq(HUNDRED);
+      await sTree.nodeWithdraw(9);
+
+      for (const i of Array(14).keys()) await checkNodeAmountTo(sTree, i + 1, 0);
+    });
+    it("leaf #8 +2, leaf #9 +2, removeLimit(4, #8-#10), leaf #10 +100, -100", async () => {
+      const HUNDRED = 100;
+      await sTree.nodeAddLiquidity(2); // leaf #8
+      await sTree.nodeAddLiquidity(2); // leaf #9
+      await sTree.removeLimit(4, 10); // #9 not used
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (0$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (2$)   |  9 (2$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 1, 0);
+      await checkNodeAmountTo(sTree, 8, 2);
+      await checkNodeAmountTo(sTree, 9, 2);
+      for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 10, 0);
+
+      await sTree.nodeAddLiquidity(HUNDRED); // leaf #10
+      expect(await sTree.nodeWithdrawView(10)).to.be.eq(HUNDRED);
+      await sTree.nodeWithdraw(10);
+
+      for (const i of Array(7).keys()) await checkNodeAmountTo(sTree, i + 1, 0);
+      for (const i of Array(2).keys()) {
+        await checkNodeAmountTo(sTree, i + 8, 2);
+        expect(await sTree.nodeWithdrawView(i + 8)).to.be.eq(0);
+      }
     });
   });
 });
