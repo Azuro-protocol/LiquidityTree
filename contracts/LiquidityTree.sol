@@ -184,6 +184,8 @@ contract LiquidityTree {
             revert IncorrectLeaf();
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
+
+        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
         if (
             isNeedUpdateWholeLeaves(
                 1,
@@ -194,12 +196,7 @@ contract LiquidityTree {
                 amount,
                 false
             )
-        ) {
-            leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
-        } else {
-            // push changes from top node down to the leaf
-            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
-        }
+        ) leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
 
         pushLazy(
             1,
@@ -223,7 +220,9 @@ contract LiquidityTree {
             revert IncorrectLeaf();
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
+
         if (treeNode[1].amount >= amount) {
+            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
             if (
                 isNeedUpdateWholeLeaves(
                     1,
@@ -234,12 +233,7 @@ contract LiquidityTree {
                     amount,
                     true
                 )
-            ) {
-                leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
-            } else {
-                // push changes from top node down to the leaf
-                push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
-            }
+            ) leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
 
             pushLazy(
                 1,
