@@ -2318,7 +2318,7 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 1, 1);
       for (const i of Array(15).keys()) await checkNodeAmountTo(sTree, i + 2, 0);
 
-      // add to unused leaf #9, actually remove from the whole tree
+      // add to unused leaf #9, actually add from the whole tree
       await sTree.addLimit(1, 9);
       /*+-----------------------------------------------------------------------------------------+
         |                                          2 (2$)                                         |
