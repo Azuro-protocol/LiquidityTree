@@ -616,7 +616,7 @@ contract LiquidityTree {
         uint48 end,
         uint48 l,
         uint48 r
-    ) public view returns (uint128 amount) {
+    ) internal view returns (uint128 amount) {
         if ((begin == l && end == r) || (begin == end)) {
             // if node leafs equal to leaf interval then stop and return amount value
             return (treeNode[node].amount);
