@@ -2647,5 +2647,142 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 10, TOKENS_300);
       for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
     });
+    it("loss distribution for new leaves, leaf #8 +1 -1 #9 +1 -1, addLimit(0.009694838^40, #8), add(0.009694838^40), removeLimit(0.001205549^40, #10 +0.000003125^40, removeLimit(0.013858226^40, 9), #11 +0.00001^40 -0.000007633^40)", async () => {
+      const addAmount8 = BigNumber.from("96948376346165723596581337601820494654"); // 0.009694838^40
+      const addAmount = BigNumber.from("53658303428241312846456929242569730335"); // 0.009694838^40
+      const removeAmount8 = BigNumber.from("12055489045607977961174742188674589737"); // 0.001205549^40
+      const depoAmount10 = BigNumber.from("31254422809208851435692772303608874"); // 0.000003125^40
+      const removeFrom9 = BigNumber.from("138582264270549204342936304200143962123"); // 0.013858226^40
+      const depoAmount11 = BigNumber.from("100000000000000000000000000000000000"); // 0.00001^40
+      await sTree.nodeAddLiquidity(1); // leaf #8
+      await sTree.nodeWithdraw(8);
+      await sTree.nodeAddLiquidity(1); // leaf #9
+      await sTree.nodeWithdraw(9);
+
+      await sTree.addLimit(addAmount8, 8);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                    1 (0.009694838^40$)                                  |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +------------------------+---------+---------+------------------------+-------------------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      await checkNodeAmountTo(sTree, 1, addAmount8);
+      for (const i of Array(13).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
+
+      await sTree.add(addAmount);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                    1 (0.015060668^40$)                                  |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +------------------------+---------+---------+------------------------+-------------------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      await checkNodeAmountTo(sTree, 1, addAmount8.add(addAmount));
+      for (const i of Array(13).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
+
+      await sTree.removeLimit(removeAmount8, 8);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                    1 (0.013855119^40$)                                  |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +------------------------+---------+---------+------------------------+-------------------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      await checkNodeAmountTo(sTree, 1, addAmount8.add(addAmount).sub(removeAmount8));
+      for (const i of Array(13).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
+
+      await sTree.nodeAddLiquidity(depoAmount10); // leaf #10
+      /*+------------------------------------------------------------------------------------------------------+
+        |                                                 1 (0.013858245^40$)                                  |
+        +---------------------------------------------------------+--------------------------------------------+
+        |                      2 (0.000003125^40$)                |                      3 (0$)                |
+        +------------------------+--------------------------------+------------------------+-------------------+
+        |           4 (0$)       |       5 (0.000003125^40$)      |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+----------------------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0.000003125^40$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+----------------------+---------+-------------+----------+---------+---------+*/
+      await checkNodeAmountTo(sTree, 1, addAmount8.add(addAmount).sub(removeAmount8).add(depoAmount10));
+      await checkNodeAmountTo(sTree, 2, depoAmount10);
+      await checkNodeAmountTo(sTree, 3, ZERO);
+      await checkNodeAmountTo(sTree, 5, depoAmount10);
+      await checkNodeAmountTo(sTree, 8, ZERO);
+      await checkNodeAmountTo(sTree, 9, ZERO);
+      await checkNodeAmountTo(sTree, 10, depoAmount10);
+      for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
+
+      await sTree.removeLimit(removeFrom9, 9);
+      /*+------------------------------------------------------------------------------------------------------+
+        |                                                 1 (0.000000018^40$)                                  |
+        +---------------------------------------------------------+--------------------------------------------+
+        |                      2 (0.000000018^40$)                |                      3 (0$)                |
+        +------------------------+--------------------------------+------------------------+-------------------+
+        |           4 (0$)       |       5 (0.000000018^40$)      |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+----------------------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0.000003125^40$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+----------------------+---------+-------------+----------+---------+---------+*/
+      top1 = addAmount8.add(addAmount).sub(removeAmount8).add(depoAmount10).sub(removeFrom9);
+      await checkNodeAmountTo(sTree, 1, top1);
+      await checkNodeAmountTo(sTree, 2, top1);
+      await checkNodeAmountTo(sTree, 3, ZERO);
+      await checkNodeAmountTo(sTree, 5, top1);
+      await checkNodeAmountTo(sTree, 8, ZERO);
+      await checkNodeAmountTo(sTree, 9, ZERO);
+      // leaf #10 not reduced because depoAmount10 << removeFrom9, so here is undistributed loss (expands for new leaf (leaves))
+      await checkNodeAmountTo(sTree, 10, depoAmount10);
+      for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
+
+      await sTree.nodeAddLiquidity(depoAmount11); // leaf #11
+      /*+---------------------------------------------------------------------------------------------------------------+
+        |                                                     1 (0.000010018^40$)                                       |
+        +------------------------------------------------------------------+--------------------------------------------+
+        |                            2 (0.000010018^40$)                   |                      3 (0$)                |
+        +------------------------+-----------------------------------------+------------------------+-------------------+
+        |           4 (0$)       |             5 (0.000010018^40$)         |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+----------------------+------------------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0.000003125^40$) | 11 (0.00001^40$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+----------------------+------------------+-------------+----------+---------+---------+*/
+      top1 = addAmount8.add(addAmount).sub(removeAmount8).add(depoAmount10).sub(removeFrom9).add(depoAmount11);
+      await checkNodeAmountTo(sTree, 1, top1);
+      await checkNodeAmountTo(sTree, 2, top1);
+      await checkNodeAmountTo(sTree, 3, ZERO);
+      await checkNodeAmountTo(sTree, 5, top1);
+      await checkNodeAmountTo(sTree, 8, ZERO);
+      await checkNodeAmountTo(sTree, 9, ZERO);
+      await checkNodeAmountTo(sTree, 10, depoAmount10);
+      await checkNodeAmountTo(sTree, 11, depoAmount11);
+      for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 12, ZERO);
+
+      const amountWithdrawn11 = await sTree.nodeWithdrawView(11);
+      await sTree.nodeWithdraw(11);
+      /*+---------------------------------------------------------------------------------------------------------------+
+        |                                                     1 (0.000002386^40$)                                       |
+        +------------------------------------------------------------------+--------------------------------------------+
+        |                            2 (0.000002386^40$)                   |                      3 (0$)                |
+        +------------------------+-----------------------------------------+------------------------+-------------------+
+        |           4 (0$)       |             5 (0.000002386^40$)         |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+----------------------+------------------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0.000002386^40$) |    11 (0$)       |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+----------------------+------------------+-------------+----------+---------+---------+*/
+      top1 = addAmount8
+        .add(addAmount)
+        .sub(removeAmount8)
+        .add(depoAmount10)
+        .sub(removeFrom9)
+        .add(depoAmount11)
+        .sub(amountWithdrawn11);
+      await checkNodeAmountTo(sTree, 1, top1);
+      await checkNodeAmountTo(sTree, 2, top1);
+      await checkNodeAmountTo(sTree, 5, top1);
+      await checkNodeAmountTo(sTree, 10, top1);
+      for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
+      expect(amountWithdrawn11).lt(depoAmount11); // because of loss distribution from parent nodes
+    });
   });
 });
