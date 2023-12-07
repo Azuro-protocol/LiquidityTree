@@ -2799,5 +2799,63 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 1, TOKENS_10000);
       for (const i of Array(15).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
     });
+    it("add 100 to empty tree after series of depo/withdraw", async () => {
+      // depo/withdraw #8-#12
+      for (const i of Array(5).keys()) {
+        await sTree.nodeAddLiquidity(1);
+        await sTree.nodeWithdraw(i + 8);
+      }
+      await sTree.add(TOKENS_10000);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                    1 (10000$)                                           |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +------------------------+---------+---------+------------------------+-------------------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      //for (const i of Array(15).keys()) console.log(i+1, await getNodeAmount(sTree, i+1));
+      await checkNodeAmountTo(sTree, 1, TOKENS_10000);
+      for (const i of Array(15).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
+
+      // #13 +1
+      await sTree.nodeAddLiquidity(1);
+      let tx13 = await sTree.nodeWithdraw(13);
+      expect(await getWithdrawnAmount(tx13)).to.be.eq(BigNumber.from(TOKENS_10000).add(1));
+    });
+    it("addLimit(100, 8) to empty tree after series of depo/withdraw", async () => {
+      describe("Example tree (8 leaves) fair distribution", async () => {
+        beforeEach(async () => {
+          sTree = await prepareTree(ethers, MIDDLE_TREE_LEAFS);
+          // depo/withdraw #8-#12
+          for (const i of Array(5).keys()) {
+            await sTree.nodeAddLiquidity(1);
+            await sTree.nodeWithdraw(i + 8);
+          }
+        });
+        it("addLimit(100, 8) to empty tree after series of depo/withdraw", async () => {
+          await sTree.addLimit(TOKENS_10000, 8);
+        });
+        it("addLimit(100, 11) to empty tree after series of depo/withdraw", async () => {
+          await sTree.addLimit(TOKENS_10000, 11);
+        });
+        it("addLimit(100, 12) to empty tree after series of depo/withdraw", async () => {
+          await sTree.addLimit(TOKENS_10000, 12);
+        });
+        it("addLimit(100, 14) to empty tree after series of depo/withdraw", async () => {
+          await sTree.addLimit(TOKENS_10000, 14);
+        });
+        afterEach(async () => {
+          await checkNodeAmountTo(sTree, 1, TOKENS_10000);
+          for (const i of Array(15).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
+
+          // #13 +1
+          await sTree.nodeAddLiquidity(1);
+          let tx13 = await sTree.nodeWithdraw(13);
+          expect(await getWithdrawnAmount(tx13)).to.be.eq(BigNumber.from(TOKENS_10000).add(1));
+        });
+      });
+    });
   });
 });

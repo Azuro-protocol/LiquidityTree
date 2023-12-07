@@ -384,10 +384,14 @@ contract LiquidityTree {
         bool isSub,
         uint64 updateId_
     ) internal {
+        if (node == 1 && !isSub && treeNode[node].amount == 0) {
+            changeAmount(node, amount, isSub, updateId_);
+            return;
+        }
         if ((begin == l && end == r) || (begin == end)) {
             // if node leafs equal to leaf interval then stop
             // only for not zero node or add to top node
-            if (treeNode[node].amount > 0 || (!isSub && node == 1))
+            if (treeNode[node].amount > 0)
                 changeAmount(node, amount, isSub, updateId_);
             return;
         }
