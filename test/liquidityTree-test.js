@@ -4,6 +4,7 @@ const { LogDescription } = require("ethers/lib/utils");
 const { ethers } = require("hardhat");
 const { tokens, getNodeAmount, prepareTree, getWithdrawnAmount } = require("../utils/utils");
 
+const TOKENS_10000 = tokens(10_000);
 const TOKENS_300 = tokens(300);
 const TOKENS_270 = tokens(270);
 const TOKENS_400 = tokens(400);
@@ -2783,6 +2784,20 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 10, top1);
       for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
       expect(amountWithdrawn11).lt(depoAmount11); // because of loss distribution from parent nodes
+    });
+    it("add 100 to empty tree", async () => {
+      await sTree.add(TOKENS_10000);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                    1 (10000$)                                           |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +------------------------+---------+---------+------------------------+-------------------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      await checkNodeAmountTo(sTree, 1, TOKENS_10000);
+      for (const i of Array(15).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
     });
   });
 });

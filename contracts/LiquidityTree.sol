@@ -156,7 +156,11 @@ contract LiquidityTree {
      */
     function add(uint128 amount) public {
         _checkAmount(amount);
-        uint48 leaf = nextNode - 1;
+
+        // if no leaves, distribution to the whole tree
+        uint48 leaf = nextNode > LIQUIDITYNODES
+            ? nextNode - 1
+            : LIQUIDITYLASTNODE;
 
         // push changes from top node down to the leaf
         if (treeNode[1].amount != 0)
@@ -382,7 +386,8 @@ contract LiquidityTree {
     ) internal {
         if ((begin == l && end == r) || (begin == end)) {
             // if node leafs equal to leaf interval then stop
-            if (treeNode[node].amount > 0)
+            // only for not zero node or add to top node
+            if (treeNode[node].amount > 0 || (!isSub && node == 1))
                 changeAmount(node, amount, isSub, updateId_);
             return;
         }
