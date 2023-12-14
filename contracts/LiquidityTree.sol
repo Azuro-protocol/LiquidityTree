@@ -647,6 +647,24 @@ contract LiquidityTree {
         return amount;
     }
 
+    /** 
+     * @dev Only fuzzing test purpose, remove from release!
+     */
+    function getUndistributedAmount() public view returns (int256) {
+        int256 rootNodeAmount = int256(uint256(treeNode[1].amount));
+        int256 withdrawableSum = int256(uint256(getWithdrawableSum()));
+        return rootNodeAmount - withdrawableSum;
+    }
+
+    /** 
+     * @dev Only fuzzing test purpose, remove from release!
+     */
+    function getWithdrawableSum() public view returns (uint256 sum) {
+        for (uint48 i = LIQUIDITYNODES; i <= LIQUIDITYLASTNODE; i++) {
+            sum += nodeWithdrawView(i);
+        }
+    }
+
     function _checkAmount(uint256 amount) internal pure {
         if (amount == 0) revert IncorrectAmount();
     }
