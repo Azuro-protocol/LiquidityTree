@@ -2029,6 +2029,11 @@ describe("LiquidityTree", () => {
     it("Try add 0 liquidity", async () => {
       await expect(sTree.nodeAddLiquidity(0)).to.be.revertedWith("IncorrectAmount");
     });
+    it("Try add liquidity to already filled leaves range", async () => {
+      // fill up keaves range
+      for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(tokens(1));
+      await expect(sTree.nodeAddLiquidity(tokens(1))).to.be.revertedWith("LeafNumberRangeExceeded");
+    });
   });
   describe("Example tree (2 leaves) fair distribution", async () => {
     before(async () => {

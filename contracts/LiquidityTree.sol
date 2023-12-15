@@ -25,6 +25,17 @@ contract LiquidityTree {
     error IncorrectLeaf();
     error LeafNotExist();
     error IncorrectPercent();
+    error LeafNumberRangeExceeded();
+
+    modifier checkLeaf(uint48 leaf) {
+        _checkLeaf(leaf);
+        _;
+    }
+
+    modifier checkAmount(uint128 amount) {
+        _checkAmount(amount);
+        _;
+    }
 
     /**
      * @dev initializing LIQUIDITYNODES and nextNode. 
@@ -53,8 +64,12 @@ contract LiquidityTree {
      * @param amount - adding amount
      * @return resNode - node (leaf) number of added liquidity
      */
-    function nodeAddLiquidity(uint128 amount) public returns (uint48 resNode) {
-        _checkAmount(amount);
+    function nodeAddLiquidity(uint128 amount)
+        public
+        checkAmount(amount)
+        returns (uint48 resNode)
+    {
+        if (nextNode > LIQUIDITYLASTNODE) revert LeafNumberRangeExceeded();
         updateUp(nextNode, amount, false, ++updateId);
         resNode = nextNode;
         nextNode++;
@@ -110,11 +125,10 @@ contract LiquidityTree {
      */
     function nodeWithdrawPercent(uint48 leaf, uint40 percent)
         public
+        checkLeaf(leaf)
         returns (uint128 withdrawAmount)
     {
         if (treeNode[leaf].updateId == 0) revert LeafNotExist();
-        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
-            revert IncorrectLeaf();
         if (percent > DECIMALS) revert IncorrectPercent();
 
         // push changes from top node down to the leaf, if leaf is not up to date
@@ -154,9 +168,7 @@ contract LiquidityTree {
      * @dev add amount to whole tree (all used leaves), starting from top node #1
      * @param amount value to add
      */
-    function add(uint128 amount) public {
-        _checkAmount(amount);
-
+    function add(uint128 amount) public checkAmount(amount) {
         // if no leaves, distribution to the whole tree
         uint48 leaf = nextNode > LIQUIDITYNODES
             ? nextNode - 1
@@ -182,10 +194,11 @@ contract LiquidityTree {
      * @dev add amount only for limited leaves in tree [first_leaf, leaf]
      * @param amount value to add
      */
-    function addLimit(uint128 amount, uint48 leaf) public {
-        _checkAmount(amount);
-        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
-            revert IncorrectLeaf();
+    function addLimit(uint128 amount, uint48 leaf)
+        public
+        checkLeaf(leaf)
+        checkAmount(amount)
+    {
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
 
@@ -218,10 +231,11 @@ contract LiquidityTree {
      * @dev remove amount only for limited leaves in tree [first_leaf, leaf]
      * @param amount value to remove
      */
-    function removeLimit(uint128 amount, uint48 leaf) public {
-        _checkAmount(amount);
-        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
-            revert IncorrectLeaf();
+    function removeLimit(uint128 amount, uint48 leaf)
+        public
+        checkLeaf(leaf)
+        checkAmount(amount)
+    {
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
 
@@ -256,8 +270,7 @@ contract LiquidityTree {
      * @dev remove amount from whole tree (all used leaves), starting from top node #1
      * @param amount value to removeamount
      */
-    function remove(uint128 amount) public {
-        _checkAmount(amount);
+    function remove(uint128 amount) public checkAmount(amount) {
         if (treeNode[1].amount >= amount) {
             uint48 leaf = nextNode - 1;
             // push changes from top node down to the leaf
@@ -647,25 +660,12 @@ contract LiquidityTree {
         return amount;
     }
 
-    /** 
-     * @dev Only fuzzing test purpose, remove from release!
-     */
-    function getUndistributedAmount() public view returns (int256) {
-        int256 rootNodeAmount = int256(uint256(treeNode[1].amount));
-        int256 withdrawableSum = int256(uint256(getWithdrawableSum()));
-        return rootNodeAmount - withdrawableSum;
-    }
-
-    /** 
-     * @dev Only fuzzing test purpose, remove from release!
-     */
-    function getWithdrawableSum() public view returns (uint256 sum) {
-        for (uint48 i = LIQUIDITYNODES; i <= LIQUIDITYLASTNODE; i++) {
-            sum += nodeWithdrawView(i);
-        }
-    }
-
-    function _checkAmount(uint256 amount) internal pure {
+    function _checkAmount(uint128 amount) internal pure {
         if (amount == 0) revert IncorrectAmount();
+    }
+
+    function _checkLeaf(uint48 leaf) internal view {
+        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
+            revert IncorrectLeaf();
     }
 }
