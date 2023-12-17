@@ -421,7 +421,12 @@ contract LiquidityTree {
                 uint256 rAmount = treeNode[node * 2 + 1].amount -
                     getLeavesAmount(node * 2 + 1, mid + 1, end, r + 1, end);
                 uint256 sumAmounts = lAmount + rAmount;
-                if (sumAmounts == 0) return;
+
+                if (sumAmounts == 0) {
+                    if (node == 1 || (treeNode[node].amount > 0))
+                        changeAmount(node, amount, isSub, updateId_);
+                    return;
+                }
                 uint128 forLeftAmount = uint128(
                     ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
                 );
