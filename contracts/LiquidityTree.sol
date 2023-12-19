@@ -519,11 +519,13 @@ contract LiquidityTree {
                         isSub
                     );
             } else {
-                uint256 lAmount = treeNode[node * 2].amount;
-                // get right amount excluding unused leaves
-                uint256 rAmount = treeNode[node * 2 + 1].amount -
-                    getLeavesAmount(node * 2 + 1, mid + 1, end, r + 1, end);
-                uint256 sumAmounts = lAmount + rAmount;
+                uint48 lChild = node * 2;
+                uint48 rChild = lChild + 1;
+                uint256 lAmount = treeNode[lChild].amount;
+                uint256 sumAmounts = lAmount +
+                    // get right amount excluding unused leaves
+                    (treeNode[rChild].amount -
+                        getLeavesAmount(rChild, mid + 1, end, r + 1, end));
                 if (sumAmounts == 0) return true;
                 uint128 forLeftAmount = uint128(
                     ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
@@ -531,25 +533,47 @@ contract LiquidityTree {
 
                 // l in [begin,mid] - part in left child or
                 // r in [mid+1,end] - part in right child
-                return
-                    isNeedUpdateWholeLeaves(
-                        node * 2,
-                        begin,
-                        mid,
-                        l,
-                        mid,
-                        forLeftAmount,
-                        isSub
-                    ) ||
-                    isNeedUpdateWholeLeaves(
-                        node * 2 + 1,
-                        mid + 1,
-                        end,
-                        mid + 1,
-                        r,
-                        amount - forLeftAmount,
-                        isSub
-                    );
+                // for "sub" case if one child need update then return true
+                // for "add" both child need whole update for return true
+                return (
+                    isSub
+                        ? isNeedUpdateWholeLeaves(
+                            lChild,
+                            begin,
+                            mid,
+                            l,
+                            mid,
+                            forLeftAmount,
+                            isSub
+                        ) ||
+                            isNeedUpdateWholeLeaves(
+                                rChild,
+                                mid + 1,
+                                end,
+                                mid + 1,
+                                r,
+                                amount - forLeftAmount,
+                                isSub
+                            )
+                        : isNeedUpdateWholeLeaves(
+                            lChild,
+                            begin,
+                            mid,
+                            l,
+                            mid,
+                            forLeftAmount,
+                            isSub
+                        ) &&
+                            isNeedUpdateWholeLeaves(
+                                rChild,
+                                mid + 1,
+                                end,
+                                mid + 1,
+                                r,
+                                amount - forLeftAmount,
+                                isSub
+                            )
+                );
             }
         }
         // [l,r] in [mid+1,end] - all leafs in right child
