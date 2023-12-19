@@ -2511,6 +2511,288 @@ describe("LiquidityTree", () => {
       expect(await checkNodeAmountTo(sTree, 1, HUNDRED + 1));
       for (const i of Array(13).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
     });
+    it("add(1), #8 +1 -1, (#9-#12) -> {+1}, #12 -1, (#13-#14) +1, (#13-#14) -1, #15 +3, removeLimit(2, #14) all withdrawview", async () => {
+      await sTree.add(1);
+
+      await sTree.nodeAddLiquidity(1); // #8
+      let tx8 = await sTree.nodeWithdraw(8); // 2
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (0$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await getWithdrawnAmount(tx8)).to.be.eq(2);
+      await checkTreeIsEmpty(sTree);
+
+      for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(1); // #9-#12
+      await sTree.nodeWithdraw(12);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (3$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 3));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, ZERO));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+
+      for (const i of Array(2).keys()) await sTree.nodeAddLiquidity(1); // #13-#14
+      for (const i of Array(2).keys()) await sTree.nodeWithdraw(13 + i); // #13-#14
+
+      expect(await checkNodeAmountTo(sTree, 1, 3));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, ZERO));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+
+      await sTree.nodeAddLiquidity(3); // #15
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (6$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (3$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (3$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (3$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 6));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, 3));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      expect(await checkNodeAmountTo(sTree, 6, ZERO));
+      expect(await checkNodeAmountTo(sTree, 7, 3));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 12 + i, ZERO));
+      expect(await sTree.nodeWithdrawView(9)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(10)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(11)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(15)).to.be.eq(3);
+
+      await sTree.removeLimit(2, 14); // removelimit 2 from #14 becomes remove() from whole tree
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (4$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (3$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (3$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (3$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 4));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, 3));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      expect(await checkNodeAmountTo(sTree, 6, ZERO));
+      expect(await checkNodeAmountTo(sTree, 7, 3));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 12 + i, ZERO));
+
+      expect(await sTree.nodeWithdrawView(9)).to.be.eq(0);
+      expect(await sTree.nodeWithdrawView(10)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(11)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(15)).to.be.eq(2);
+    });
+    it("add(1), #8 +1 -1, (#9-#12) -> {+1}, #12 -1, (#13-#14) +1, (#13-#14) -1, #15 +3, removeLimit(2, #13), all withdrawview", async () => {
+      await sTree.add(1);
+
+      await sTree.nodeAddLiquidity(1); // #8
+      let tx8 = await sTree.nodeWithdraw(8); // 2
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (0$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await getWithdrawnAmount(tx8)).to.be.eq(2);
+      await checkTreeIsEmpty(sTree);
+
+      for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(1); // #9-#12
+      await sTree.nodeWithdraw(12);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (3$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 3));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, ZERO));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+
+      for (const i of Array(2).keys()) await sTree.nodeAddLiquidity(1); // #13-#14
+      for (const i of Array(2).keys()) await sTree.nodeWithdraw(13 + i); // #13-#14
+
+      expect(await checkNodeAmountTo(sTree, 1, 3));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, ZERO));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+
+      await sTree.nodeAddLiquidity(3); // #15
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (6$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (3$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (3$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (3$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 6));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, 3));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      expect(await checkNodeAmountTo(sTree, 6, ZERO));
+      expect(await checkNodeAmountTo(sTree, 7, 3));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 12 + i, ZERO));
+      expect(await sTree.nodeWithdrawView(9)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(10)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(11)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(15)).to.be.eq(3);
+
+      await sTree.removeLimit(2, 13); // removelimit 2 from #13 becomes remove() from whole tree
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (4$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (3$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (3$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (3$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 4));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, 3));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      expect(await checkNodeAmountTo(sTree, 6, ZERO));
+      expect(await checkNodeAmountTo(sTree, 7, 3));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 12 + i, ZERO));
+
+      expect(await sTree.nodeWithdrawView(9)).to.be.eq(0);
+      expect(await sTree.nodeWithdrawView(10)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(11)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(15)).to.be.eq(2);
+    });
+    it("add(1), #8 +1 -1, (#9-#12) -> {+1}, #12 -1, (#13-#14) +1, (#13-#14) -1, #15 +3, removeLimit(2, #12), all withdrawview", async () => {
+      await sTree.add(1);
+
+      await sTree.nodeAddLiquidity(1); // #8
+      let tx8 = await sTree.nodeWithdraw(8); // 2
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (0$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (0$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (0$)       |        5 (0$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await getWithdrawnAmount(tx8)).to.be.eq(2);
+      await checkTreeIsEmpty(sTree);
+
+      for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(1); // #9-#12
+      await sTree.nodeWithdraw(12);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (3$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 3));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, ZERO));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+
+      for (const i of Array(2).keys()) await sTree.nodeAddLiquidity(1); // #13-#14
+      for (const i of Array(2).keys()) await sTree.nodeWithdraw(13 + i); // #13-#14
+
+      expect(await checkNodeAmountTo(sTree, 1, 3));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, ZERO));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+
+      await sTree.nodeAddLiquidity(3); // #15
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (6$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (3$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (3$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (3$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 6));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, 3));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      expect(await checkNodeAmountTo(sTree, 6, ZERO));
+      expect(await checkNodeAmountTo(sTree, 7, 3));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 12 + i, ZERO));
+      expect(await sTree.nodeWithdrawView(9)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(10)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(11)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(15)).to.be.eq(3);
+
+      await sTree.removeLimit(2, 12); // removelimit 2 from #12 becomes remove() from whole tree
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (4$)                                         |
+        +--------------------------------------------+--------------------------------------------+
+        |                      2 (3$)                |                      3 (3$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |           4 (1$)       |        5 (2$)     |           6 (0$)       |       7 (3$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (0$)   |  9 (1$)  | 10 (1$) | 11 (1$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (3$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      expect(await checkNodeAmountTo(sTree, 1, 4));
+      expect(await checkNodeAmountTo(sTree, 2, 3));
+      expect(await checkNodeAmountTo(sTree, 3, 3));
+      expect(await checkNodeAmountTo(sTree, 4, 1));
+      expect(await checkNodeAmountTo(sTree, 5, 2));
+      expect(await checkNodeAmountTo(sTree, 6, ZERO));
+      expect(await checkNodeAmountTo(sTree, 7, 3));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 9 + i, 1));
+      for (const i of Array(3).keys()) expect(await checkNodeAmountTo(sTree, 12 + i, ZERO));
+
+      expect(await sTree.nodeWithdrawView(9)).to.be.eq(0);
+      expect(await sTree.nodeWithdrawView(10)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(11)).to.be.eq(1);
+      expect(await sTree.nodeWithdrawView(15)).to.be.eq(2);
+    });
     it("leaf #8 +1, #9 +1 -1, #10 +1, #11 +1, #8 -1, addLimit(10, #10), #10 -11, #11 -1", async () => {
       await sTree.nodeAddLiquidity(1); // #8
       await sTree.nodeAddLiquidity(1); // #9
@@ -2532,7 +2814,6 @@ describe("LiquidityTree", () => {
       expect(await sTree.nodeWithdrawView(11)).to.be.eq(1);
 
       await sTree.addLimit(10, 10);
-      //for (const i of Array(15).keys()) console.log(i+1, await getNodeAmount(sTree, i+1));
       /*+-----------------------------------------------------------------------------------------+
         |                                         1 (12$)                                         |
         +--------------------------------------------+--------------------------------------------+
@@ -2591,7 +2872,6 @@ describe("LiquidityTree", () => {
       await sTree.nodeAddLiquidity(tokens(2)); // #9
       const tokens2and1 = BigNumber.from(tokens(2)).add(1);
       const tokens1and1 = BigNumber.from(tokens(1)).add(1);
-      console.log("0");
       /*+-----------------------------------------------------------------------------------------+
         |                                          1 (2e18 + 1$)                                  |
         +--------------------------------------------+--------------------------------------------+
@@ -3093,7 +3373,6 @@ describe("LiquidityTree", () => {
         +-------------+----------+---------+---------+-------------+----------+---------+---------+
         |    8 (0$)   |  9 (0$)  | 10 (0$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
         +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
-      //for (const i of Array(15).keys()) console.log(i+1, await getNodeAmount(sTree, i+1));
       await checkNodeAmountTo(sTree, 1, TOKENS_10000);
       for (const i of Array(15).keys()) await checkNodeAmountTo(sTree, i + 2, ZERO);
 

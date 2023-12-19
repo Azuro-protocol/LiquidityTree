@@ -508,6 +508,8 @@ contract LiquidityTree {
         if (begin <= l && l <= mid) {
             if (begin <= r && r <= mid) {
                 // [l,r] in [begin,mid] - all leafs in left child
+                if (treeNode[node * 2].amount == 0) return true;
+
                 return
                     isNeedUpdateWholeLeaves(
                         node * 2,
