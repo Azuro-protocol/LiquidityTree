@@ -2586,6 +2586,46 @@ describe("LiquidityTree", () => {
       expect(await sTree.nodeWithdrawView(10)).to.be.eq(1);
       expect(await sTree.nodeWithdrawView(11)).to.be.eq(11);
     });
+    it("leaf #8 +1, #9 +2e18, removeLimit(1e18, #8), #8 0, #9 -(1e18+1)", async () => {
+      await sTree.nodeAddLiquidity(1); // #8
+      await sTree.nodeAddLiquidity(tokens(2)); // #9
+      const tokens2and1 = BigNumber.from(tokens(2)).add(1);
+      const tokens1and1 = BigNumber.from(tokens(1)).add(1);
+      console.log("0");
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (2e18 + 1$)                                  |
+        +--------------------------------------------+--------------------------------------------+
+        |                    2 (2e18 + 1$)           |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |        4 (2e18 + 1$)   |        5 (22$)    |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (1$)   | 9 (2e18$)| 10 (11$)| 11 (11$)|    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      await checkNodeAmountTo(sTree, 1, tokens2and1);
+      await checkNodeAmountTo(sTree, 2, tokens2and1);
+      await checkNodeAmountTo(sTree, 4, tokens2and1);
+      await checkNodeAmountTo(sTree, 8, 1);
+      await checkNodeAmountTo(sTree, 9, tokens(2));
+
+      await sTree.removeLimit(tokens(1), 8);
+      /*+-----------------------------------------------------------------------------------------+
+        |                                          1 (1e18 + 1$)                                  |
+        +--------------------------------------------+--------------------------------------------+
+        |                    2 (1e18 + 1$)           |                      3 (0$)                |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |        4 (1e18 + 1$)   |        5 (22$)    |           6 (0$)       |       7 (0$)      |
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+
+        |    8 (1$)   | 9 (2e18$)| 10 (11$)| 11 (11$)|    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        +-------------+----------+---------+---------+-------------+----------+---------+---------+*/
+      await checkNodeAmountTo(sTree, 1, tokens1and1);
+      await checkNodeAmountTo(sTree, 2, tokens1and1);
+      await checkNodeAmountTo(sTree, 4, tokens1and1);
+      await checkNodeAmountTo(sTree, 8, 1);
+      await checkNodeAmountTo(sTree, 9, tokens(2));
+
+      expect(await sTree.nodeWithdrawView(8)).to.be.eq(0);
+      expect(await sTree.nodeWithdrawView(9)).to.be.eq(tokens1and1);
+    });
     it("leaf #8 +2, leaf #9 +2, removeLimit(4, #8-#10), leaf #10 +100, -100", async () => {
       const HUNDRED = 100;
       await sTree.nodeAddLiquidity(2); // leaf #8
