@@ -26,6 +26,7 @@ contract LiquidityTree {
     error LeafNotExist();
     error IncorrectPercent();
     error LeafNumberRangeExceeded();
+    error InsufficientTopNodeAmount();
 
     modifier checkLeaf(uint48 leaf) {
         _checkLeaf(leaf);
@@ -238,32 +239,31 @@ contract LiquidityTree {
     {
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
+        if (treeNode[1].amount < amount) revert InsufficientTopNodeAmount();
 
-        if (treeNode[1].amount >= amount) {
-            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
-            if (
-                isNeedUpdateWholeLeaves(
-                    1,
-                    LIQUIDITYNODES,
-                    LIQUIDITYLASTNODE,
-                    LIQUIDITYNODES,
-                    leaf,
-                    amount,
-                    true
-                )
-            ) leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
-
-            pushLazy(
+        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        if (
+            isNeedUpdateWholeLeaves(
                 1,
                 LIQUIDITYNODES,
                 LIQUIDITYLASTNODE,
                 LIQUIDITYNODES,
                 leaf,
                 amount,
-                true,
-                ++updateId
-            );
-        }
+                true
+            )
+        ) leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
+
+        pushLazy(
+            1,
+            LIQUIDITYNODES,
+            LIQUIDITYLASTNODE,
+            LIQUIDITYNODES,
+            leaf,
+            amount,
+            true,
+            ++updateId
+        );
     }
 
     /**
@@ -271,22 +271,22 @@ contract LiquidityTree {
      * @param amount value to removeamount
      */
     function remove(uint128 amount) public checkAmount(amount) {
-        if (treeNode[1].amount >= amount) {
-            uint48 leaf = nextNode - 1;
-            // push changes from top node down to the leaf
-            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        if (treeNode[1].amount < amount) revert InsufficientTopNodeAmount();
 
-            pushLazy(
-                1,
-                LIQUIDITYNODES,
-                LIQUIDITYLASTNODE,
-                LIQUIDITYNODES,
-                leaf,
-                amount,
-                true,
-                ++updateId
-            );
-        }
+        uint48 leaf = nextNode - 1;
+        // push changes from top node down to the leaf
+        push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+
+        pushLazy(
+            1,
+            LIQUIDITYNODES,
+            LIQUIDITYLASTNODE,
+            LIQUIDITYNODES,
+            leaf,
+            amount,
+            true,
+            ++updateId
+        );
     }
 
     /**

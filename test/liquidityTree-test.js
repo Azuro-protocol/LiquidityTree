@@ -2034,6 +2034,10 @@ describe("LiquidityTree", () => {
       for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(tokens(1));
       await expect(sTree.nodeAddLiquidity(tokens(1))).to.be.revertedWith("LeafNumberRangeExceeded");
     });
+    it("Try remove more liquidity than exists", async () => {
+      await sTree.nodeAddLiquidity(TOKENS_10);
+      await expect(sTree.removeLimit(TOKENS_100, 4)).to.be.revertedWith("InsufficientTopNodeAmount");
+    });
   });
   describe("Example tree (2 leaves) fair distribution", async () => {
     before(async () => {
