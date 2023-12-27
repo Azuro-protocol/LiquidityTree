@@ -522,16 +522,23 @@ contract LiquidityTree {
                     );
             } else {
                 uint48 lChild = node * 2;
-                uint48 rChild = lChild + 1;
+
                 uint256 lAmount = treeNode[lChild].amount;
+                uint256 rAmount = treeNode[lChild + 1].amount;
                 uint256 sumAmounts = lAmount +
                     // get right amount excluding unused leaves
-                    (treeNode[rChild].amount -
-                        getLeavesAmount(rChild, mid + 1, end, r + 1, end));
+                    (rAmount -
+                        getLeavesAmount(lChild + 1, mid + 1, end, r + 1, end));
                 if (sumAmounts == 0) return true;
                 uint128 forLeftAmount = uint128(
                     ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
                 );
+
+                // if reduced amount is sufficient for each child - no need to update whole tree
+                if (
+                    (isSub && (rAmount >= amount - forLeftAmount)) &&
+                    lAmount >= forLeftAmount
+                ) return false;
 
                 // l in [begin,mid] - part in left child or
                 // r in [mid+1,end] - part in right child
@@ -549,7 +556,7 @@ contract LiquidityTree {
                             isSub
                         ) ||
                             isNeedUpdateWholeLeaves(
-                                rChild,
+                                lChild + 1,
                                 mid + 1,
                                 end,
                                 mid + 1,
@@ -567,7 +574,7 @@ contract LiquidityTree {
                             isSub
                         ) &&
                             isNeedUpdateWholeLeaves(
-                                rChild,
+                                lChild + 1,
                                 mid + 1,
                                 end,
                                 mid + 1,
