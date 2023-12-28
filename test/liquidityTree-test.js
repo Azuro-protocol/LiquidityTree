@@ -3357,6 +3357,7 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 9, ZERO);
       // leaf #10 not reduced because depoAmount10 << removeFrom9, so here is undistributed loss (expands for new leaf (leaves))
       await checkNodeAmountTo(sTree, 10, depoAmount10);
+      expect(await sTree.nodeWithdrawView(10)).to.be.eq(top1);
       for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
 
       await sTree.nodeAddLiquidity(depoAmount11); // leaf #11

@@ -605,7 +605,8 @@ contract LiquidityTree {
     }
 
     /**
-     * @dev change amount by adding value or reducing value
+     * @dev change amount by adding value or reducing value if its sufficient.
+     * @dev It can not sufficient for reduce because of not pushed changes.
      * @param node - node for changing
      * @param amount - amount value for changing
      * @param isSub - true - reduce by amount, false - add by amount
@@ -617,10 +618,12 @@ contract LiquidityTree {
         bool isSub,
         uint64 updateId_
     ) internal {
+        // not reduce if node value is not sufficient
+        if (isSub && treeNode[node].amount < amount) return;
+
         treeNode[node].updateId = updateId_;
         if (isSub) {
-            if (treeNode[node].amount >= amount)
-                treeNode[node].amount -= amount;
+            treeNode[node].amount -= amount;
         } else {
             treeNode[node].amount += amount;
         }
