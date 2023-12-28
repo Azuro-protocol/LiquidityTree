@@ -534,27 +534,30 @@ contract LiquidityTree {
                     ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
                 );
 
-                // if reduced amount is sufficient for each child - no need to update whole tree
+                // if reduced amount is not sufficient for each child - need to update whole tree
                 if (
-                    (isSub && (rAmount >= amount - forLeftAmount)) &&
-                    lAmount >= forLeftAmount
-                ) return false;
+                    (isSub && (rAmount < amount - forLeftAmount)) &&
+                    lAmount < forLeftAmount
+                ) return true;
 
                 // l in [begin,mid] - part in left child or
                 // r in [mid+1,end] - part in right child
                 // for "sub" case if one child need update then return true
                 // for "add" both child need whole update for return true
-                return (
-                    isSub
-                        ? isNeedUpdateWholeLeaves(
-                            lChild,
-                            begin,
-                            mid,
-                            l,
-                            mid,
-                            forLeftAmount,
-                            isSub
-                        ) ||
+                if (isSub) {
+                    if (forLeftAmount > 0 && lAmount >= forLeftAmount)
+                        return
+                            isNeedUpdateWholeLeaves(
+                                lChild,
+                                begin,
+                                mid,
+                                l,
+                                mid,
+                                forLeftAmount,
+                                isSub
+                            );
+                    if (rAmount >= amount - forLeftAmount)
+                        return
                             isNeedUpdateWholeLeaves(
                                 lChild + 1,
                                 mid + 1,
@@ -563,8 +566,10 @@ contract LiquidityTree {
                                 r,
                                 amount - forLeftAmount,
                                 isSub
-                            )
-                        : isNeedUpdateWholeLeaves(
+                            );
+                } else {
+                    return
+                        isNeedUpdateWholeLeaves(
                             lChild,
                             begin,
                             mid,
@@ -573,16 +578,16 @@ contract LiquidityTree {
                             forLeftAmount,
                             isSub
                         ) &&
-                            isNeedUpdateWholeLeaves(
-                                lChild + 1,
-                                mid + 1,
-                                end,
-                                mid + 1,
-                                r,
-                                amount - forLeftAmount,
-                                isSub
-                            )
-                );
+                        isNeedUpdateWholeLeaves(
+                            lChild + 1,
+                            mid + 1,
+                            end,
+                            mid + 1,
+                            r,
+                            amount - forLeftAmount,
+                            isSub
+                        );
+                }
             }
         }
         // [l,r] in [mid+1,end] - all leafs in right child
