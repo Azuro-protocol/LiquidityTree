@@ -104,7 +104,7 @@ contract LiquidityTree {
         if (treeNode[leaf].updateId == 0) return 0;
 
         return
-            pushView(
+            getPushView(
                 1,
                 LIQUIDITYNODES,
                 LIQUIDITYLASTNODE,
@@ -340,7 +340,7 @@ contract LiquidityTree {
      * @param amount - pushed (calced) amount for the node
      * @return withdrawAmount - withdrawal preview amount of the leaf
      */
-    function pushView(
+    function getPushView(
         uint48 node,
         uint48 begin,
         uint48 end,
@@ -367,12 +367,18 @@ contract LiquidityTree {
             return
                 (lAmount == 0)
                     ? 0
-                    : pushView(lChild, begin, mid, leaf, setLAmount);
+                    : getPushView(lChild, begin, mid, leaf, setLAmount);
         } else {
             return
                 (rAmount == 0)
                     ? 0
-                    : pushView(rChild, mid + 1, end, leaf, amount - setLAmount);
+                    : getPushView(
+                        rChild,
+                        mid + 1,
+                        end,
+                        leaf,
+                        amount - setLAmount
+                    );
         }
     }
 
