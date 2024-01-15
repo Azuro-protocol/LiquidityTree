@@ -3346,7 +3346,7 @@ describe("LiquidityTree", () => {
         +------------------------+--------------------------------+------------------------+-------------------+
         |           4 (0$)       |       5 (0.000000018^40$)      |           6 (0$)       |       7 (0$)      |
         +-------------+----------+----------------------+---------+-------------+----------+---------+---------+
-        |    8 (0$)   |  9 (0$)  | 10 (0.000003125^40$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        |    8 (0$)   |  9 (0$)  | 10 (0.000000018^40$) | 11 (0$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
         +-------------+----------+----------------------+---------+-------------+----------+---------+---------+*/
       top1 = addAmount8.add(addAmount).sub(removeAmount8).add(depoAmount10).sub(removeFrom9);
       await checkNodeAmountTo(sTree, 1, top1);
@@ -3355,8 +3355,7 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 5, top1);
       await checkNodeAmountTo(sTree, 8, ZERO);
       await checkNodeAmountTo(sTree, 9, ZERO);
-      // leaf #10 not reduced because depoAmount10 << removeFrom9, so here is undistributed loss (expands for new leaf (leaves))
-      await checkNodeAmountTo(sTree, 10, depoAmount10);
+      await checkNodeAmountTo(sTree, 10, top1);
       expect(await sTree.nodeWithdrawView(10)).to.be.eq(top1);
       for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
 
@@ -3368,7 +3367,7 @@ describe("LiquidityTree", () => {
         +------------------------+-----------------------------------------+------------------------+-------------------+
         |           4 (0$)       |             5 (0.000010018^40$)         |           6 (0$)       |       7 (0$)      |
         +-------------+----------+----------------------+------------------+-------------+----------+---------+---------+
-        |    8 (0$)   |  9 (0$)  | 10 (0.000003125^40$) | 11 (0.00001^40$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
+        |    8 (0$)   |  9 (0$)  | 10 (0.000000018^40$) | 11 (0.00001^40$) |    12 (0$)  |  13 (0$) |  14 (0$)|  15 (0$)|
         +-------------+----------+----------------------+------------------+-------------+----------+---------+---------+*/
       top1 = addAmount8.add(addAmount).sub(removeAmount8).add(depoAmount10).sub(removeFrom9).add(depoAmount11);
       await checkNodeAmountTo(sTree, 1, top1);
@@ -3377,7 +3376,7 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 5, top1);
       await checkNodeAmountTo(sTree, 8, ZERO);
       await checkNodeAmountTo(sTree, 9, ZERO);
-      await checkNodeAmountTo(sTree, 10, depoAmount10);
+      await checkNodeAmountTo(sTree, 10, top1.sub(depoAmount11));
       await checkNodeAmountTo(sTree, 11, depoAmount11);
       for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 12, ZERO);
 
@@ -3404,7 +3403,7 @@ describe("LiquidityTree", () => {
       await checkNodeAmountTo(sTree, 5, top1);
       await checkNodeAmountTo(sTree, 10, top1);
       for (const i of Array(5).keys()) await checkNodeAmountTo(sTree, i + 11, ZERO);
-      expect(amountWithdrawn11).lt(depoAmount11); // because of loss distribution from parent nodes
+      expect(amountWithdrawn11).eq(depoAmount11);
     });
     it("add 100 to empty tree", async () => {
       await sTree.add(TOKENS_10000);
@@ -3528,7 +3527,7 @@ describe("LiquidityTree", () => {
       for (const i of Array(3).keys()) await checkNodeAmountTo(sTree, i + 6, ZERO);
       await checkNodeAmountTo(sTree, 9, 15); // rest of update before removeLimit
       expect(await sTree.nodeWithdrawView(9)).to.be.eq(10);
-      await checkNodeAmountTo(sTree, 10, 5);
+      await checkNodeAmountTo(sTree, 10, 10);
       expect(await sTree.nodeWithdrawView(10)).to.be.eq(10);
     });
     it("#8 +1, #9 +1, #9 -1, #8 -1, #10 +1, #11 +1 -1, #12 +1 -1, #10 -1, #13 +1, #14 +0.25^32, removeLimit(13, 0.24^32), #15 +2 -2", async () => {
@@ -3590,6 +3589,84 @@ describe("LiquidityTree", () => {
 
       await sTree.nodeAddLiquidity(2); // leaf #15
       expect(await sTree.nodeWithdrawView(15)).to.be.eq(2);
+    });
+    it("#8 +19, #9 +3.2^38, #9 -3.2^38, #10 +4, #11 +7.5^37, #11 -7.5^37, #12 +2.8^38, #13 +2.8^37, remove(1.03^38), #15 +7.06^37, removeLimit(2.4^38, 13)", async () => {
+      let depoAmount = 41;
+      await sTree.nodeAddLiquidity(19); // leaf #8
+      await sTree.nodeAddLiquidity("328995419669873999047401946037690"); // leaf #9
+      await sTree.nodeWithdraw(9); // -3.28^38
+      await sTree.nodeAddLiquidity(4); // leaf #10
+      await sTree.nodeAddLiquidity("75488562431847313759232933287972072"); // leaf #11
+      await sTree.nodeWithdraw(11); // -7.5^37
+      await sTree.nodeAddLiquidity("287965658950852537361271933443341"); // leaf #12
+      await sTree.nodeAddLiquidity("28400175481555945239682911611926"); // leaf #13
+      /*+----------------------------------------------------------------------------------------------------+
+        |                                        1 (3.16*10^38$)                                             |
+        +--------------------------------------------+-------------------------------------------------------+
+        |                       2 (23$)              |                      3 (3.16*10^38$)                  |
+        +------------------------+-------------------+------------------------+------------------------------+
+        |           4 (19$)      |        5 (4$)     |             6 (3.16*10^38$)       |    7 (0$)         |
+        +-------------+----------+---------+---------+----------------+------------------+---------+---------+
+        |    8 (19$)  |  9 (0$)  | 10 (4$) | 11 (0$) | 12 (2.8*10^38$)|  13 (2.8*10^37$) | 14 (0$) |  15 (0$)|
+        +-------------+----------+---------+---------+----------------+------------------+---------+---------+*/
+      await sTree.remove("103404277861572560280309456792006");
+      await sTree.nodeAddLiquidity("70653986291277671060160426179595"); // leaf #14
+      /*+-------------------------------------------------------------------------------------------------------------+
+        |                                        1 (2.83*10^38$)                                                      |
+        +--------------------------------------------+----------------------------------------------------------------+
+        |                       2 (16$)              |                            3 (2.83*10^38$)                     |
+        +------------------------+-------------------+------------------------+---------------------------------------+
+        |           4 (19$)      |        5 (4$)     |             6 (2.83*10^38$)       |    7 (7.06*10^37$)         |
+        +-------------+----------+---------+---------+----------------+------------------+------------------+---------+
+        |    8 (19$)  |  9 (0$)  | 10 (4$) | 11 (0$) | 12 (2.8*10^38$)|  13 (2.8*10^37$) | 14 (7.06*10^37$) |  15 (0$)|
+        +-------------+----------+---------+---------+----------------+------------------+------------------+---------+*/
+      await sTree.removeLimit("243195153347672465411794712321722", 13);
+      await sTree.nodeAddLiquidity(depoAmount); // leaf #15
+      expect(await sTree.nodeWithdrawView(15)).to.be.eq(depoAmount);
+    });
+    it("+3.4*10^32, -0.44^32, #8 +-, #9 +-, #10 +-, +3.05*10^32, #11 +520, #12 +2, removeLimit(384, 9), check withdraw", async () => {
+      let withdrawableBefore = BigNumber.from(0);
+      let withdrawableAfter = BigNumber.from(0);
+      let removeAmount = 384;
+      await sTree.add("340282366920938463463374607431768");
+      await sTree.remove("44422261208206917075433098944821");
+      await sTree.nodeAddLiquidity("8507059173023461586584365185794"); // leaf #8
+      await sTree.nodeWithdraw(8);
+      await sTree.nodeAddLiquidity("77299785849812393566709031137703"); // leaf #9
+      await sTree.nodeAddLiquidity("190532265530718543900860482136034"); // leaf #10
+      await sTree.nodeWithdraw(9);
+      await sTree.nodeWithdraw(10);
+      await sTree.add("305501983895147704813365191266613");
+      await sTree.nodeAddLiquidity(520); // leaf #11
+      await sTree.nodeAddLiquidity(2); // leaf #12
+      /*+---------------------------------------------------------------------------------------------------------------+
+        |                                          1 (3.05*10^32$)                                                      |
+        +----------------------------------------------+----------------------------------------------------------------+
+        |                       2 (520$)               |                             3 (2$)                             |
+        +------------------------+---------------------+-----------------------------------+----------------------------+
+        |           4 (0$)       |      5 (520$)       |             6 (2$)                |             7 (0$)         |
+        +-------------+----------+---------+-----------+----------------+------------------+------------------+---------+
+        |    8 (19$)  |  9 (0$)  | 10 (4$) | 11 (520$) |      12 (2$)   |     13 (0$)      |      14 (0$)     |  15 (0$)|
+        +-------------+----------+---------+-----------+----------------+------------------+------------------+---------+
+      nodeWithdrawView                      3.04*10^32      0.01*10^32                                                   */
+
+      for (const i of Array(8).keys()) withdrawableBefore = withdrawableBefore.add(await sTree.nodeWithdrawView(i + 8));
+
+      await sTree.removeLimit(removeAmount, 9);
+      /*+---------------------------------------------------------------------------------------------------------------+
+        |                                          1 (3.05*10^32$)                                                      |
+        +----------------------------------------------+----------------------------------------------------------------+
+        |                       2 (3.04*10^32$)        |                    3 (0.01*10^32$)                             |
+        +------------------------+---------------------+-----------------------------------+----------------------------+
+        |           4 (0$)       |   5 (3.04*10^32$)   |        6 (0.01*10^32$)            |             7 (0$)         |
+        +-------------+----------+---------+-----------+----------------+------------------+------------------+---------+
+        |    8 (19$)  |  9 (0$)  | 10 (4$) | 11 (520$) |12 (0.01*10^32$)|     13 (0$)      |      14 (0$)     |  15 (0$)|
+        +-------------+----------+---------+-----------+----------------+------------------+------------------+---------+
+      nodeWithdrawView                      3.04*10^32      0.01*10^32                                                   */
+
+      for (const i of Array(8).keys()) withdrawableAfter = withdrawableAfter.add(await sTree.nodeWithdrawView(i + 8));
+
+      expect(withdrawableBefore.sub(withdrawableAfter)).to.be.eq(removeAmount);
     });
     it("add 100 to empty tree after series of depo/withdraw", async () => {
       // depo/withdraw #8-#12

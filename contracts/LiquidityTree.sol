@@ -214,7 +214,10 @@ contract LiquidityTree {
                 amount,
                 false
             )
-        ) leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
+        ) {
+            leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
+            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        }
 
         pushLazy(
             1,
@@ -252,7 +255,10 @@ contract LiquidityTree {
                 amount,
                 true
             )
-        ) leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
+        ) {
+            leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
+            push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        }
 
         pushLazy(
             1,
