@@ -5,15 +5,19 @@ function timeout(ms) {
 }
 
 function tokens(val) {
-  return BigNumber.from(val).mul(BigNumber.from("10").pow(18)).toString();
+  return BigInt(val) * 10n ** 18n;
 }
 
 function tokensDec(val, dec) {
-  return BigNumber.from(val).mul(BigNumber.from("10").pow(dec)).toString();
+  return BigInt(val) * 10n ** BigInt(dec);
 }
 
 async function timeShift(time) {
   await network.provider.send("evm_setNextBlockTimestamp", [time]);
+  await network.provider.send("evm_mine");
+}
+
+async function newBlock() {
   await network.provider.send("evm_mine");
 }
 
@@ -35,15 +39,15 @@ const getNodeAmount = async (sTree, node) => {
 const prepareTree = async (ethers, leafs) => {
   const LIQUIDITYTREE = await ethers.getContractFactory("LiquidityTree");
   let tree = await LIQUIDITYTREE.deploy(leafs);
-  await tree.deployed();
+  await tree.waitForDeployment();
   return tree;
 };
 
-const getWithdrawnAmount = async (txWithdrawn) => {
-  let eWithdrawn = (await txWithdrawn.wait()).events.filter((x) => {
-    return x.event == "withdrawn";
-  });
-  return eWithdrawn[0].args[1];
+const getWithdrawnAmount = async (contract, tx) => {
+  await tx.wait();
+  const events = await contract.queryFilter(contract.filters.withdrawn, -1);
+  await newBlock(); // mine new block for correctly getting events (every withdraw transaction at new block)
+  return events[0].transactionHash == tx.hash ? events[0].args[1] : 0n;
 };
 
 module.exports = {
@@ -51,6 +55,7 @@ module.exports = {
   tokens,
   tokensDec,
   timeShift,
+  newBlock,
   getGas,
   getBlockTime,
   getNodeAmount,

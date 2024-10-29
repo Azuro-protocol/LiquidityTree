@@ -1,10 +1,6 @@
 require("dotenv").config();
-
-require("@nomiclabs/hardhat-etherscan");
-require("@nomiclabs/hardhat-waffle");
+require("@nomicfoundation/hardhat-toolbox");
 require('hardhat-contract-sizer');
-require("hardhat-gas-reporter");
-require("solidity-coverage");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -26,7 +22,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.16",
+        version: "0.8.27",
         settings: {
 					optimizer: {
 						enabled: true,
