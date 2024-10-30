@@ -175,6 +175,11 @@ details in test ```There are 10000$ of liquidity, Bob added 1000$, remove 2000$ 
 details in test ```There are 15000$ of liquidity, Bob added 1000$, remove 3000$ lose of leaves 4, 5, 6. Clarc affected```
 
 
+## install required packages:
+```shell
+npm install
+```
+
 ## compile and test tasks:
 
 ```shell

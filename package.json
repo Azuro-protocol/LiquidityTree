@@ -9,7 +9,6 @@
     "dotenv": "^16.4.5",
     "hardhat": "^2.22.15",
     "hardhat-contract-sizer": "^2.10.0",
-    "hardhat-gas-reporter": "^2.2.1",
     "prettier-plugin-solidity": "^1.4.1"
   },
   "devDependencies": {
