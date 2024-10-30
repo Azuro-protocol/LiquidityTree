@@ -3,14 +3,16 @@
 pragma solidity 0.8.27;
 
 import "./interface/ILiquidityTree.sol";
+import "./libraries/FixedMath.sol";
 
 contract LiquidityTree is ILiquidityTree {
+    using FixedMath for *;
+
     struct Node {
         uint64 updateId; // last update number
         uint128 amount; // node amount
     }
 
-    uint40 constant DECIMALS = 10 ** 12;
     uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
     uint48 immutable LIQUIDITYLASTNODE; // LIQUIDITYNODES * 2 - 1
 
@@ -200,7 +202,7 @@ contract LiquidityTree is ILiquidityTree {
     function _nodeWithdraw(
         uint48 leaf
     ) public returns (uint128 withdrawAmount) {
-        withdrawAmount = _nodeWithdrawPercent(leaf, DECIMALS);
+        withdrawAmount = _nodeWithdrawPercent(leaf, uint40(FixedMath.ONE));
     }
 
     /**
@@ -219,15 +221,13 @@ contract LiquidityTree is ILiquidityTree {
         uint40 percent
     ) internal checkLeaf(leaf) returns (uint128 withdrawAmount) {
         if (treeNode[leaf].updateId == 0) revert LeafNotExist();
-        if (percent > DECIMALS) revert IncorrectPercent();
+        if (percent > FixedMath.ONE) revert IncorrectPercent();
 
         // push changes from top node down to the leaf, if leaf is not up to date
         _push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
 
         // remove amount (percent of amount) from leaf to it's parents
-        withdrawAmount = uint128(
-            (uint256(treeNode[leaf].amount) * percent) / DECIMALS
-        );
+        withdrawAmount = uint128(treeNode[leaf].amount.mul(percent));
 
         _updateUp(leaf, withdrawAmount, true, ++updateId);
 
@@ -328,7 +328,7 @@ contract LiquidityTree is ILiquidityTree {
                     return;
                 }
                 uint128 forLeftAmount = uint128(
-                    ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
+                    (amount * lAmount).div(sumAmounts) / FixedMath.ONE
                 );
 
                 // l in [start,mid] - part in left child
@@ -531,7 +531,7 @@ contract LiquidityTree is ILiquidityTree {
                         _getLeavesAmount(lChild + 1, mid + 1, end, r + 1, end));
                 if (sumAmounts == 0) return true;
                 uint128 forLeftAmount = uint128(
-                    ((amount * lAmount * DECIMALS) / sumAmounts) / DECIMALS
+                    (amount * lAmount).div(sumAmounts) / FixedMath.ONE
                 );
 
                 // if reduced amount is not sufficient for each child - need to update whole tree
