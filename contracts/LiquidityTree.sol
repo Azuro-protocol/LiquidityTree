@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.16;
+pragma solidity 0.8.27;
 
 contract LiquidityTree {
     struct Node {
@@ -8,7 +8,7 @@ contract LiquidityTree {
         uint128 amount; // node amount
     }
 
-    uint40 constant DECIMALS = 10**12;
+    uint40 constant DECIMALS = 10 ** 12;
     uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
     uint48 immutable LIQUIDITYLASTNODE; // LIQUIDITYNODES * 2 - 1
 
@@ -65,11 +65,9 @@ contract LiquidityTree {
      * @param amount - adding amount
      * @return resNode - node (leaf) number of added liquidity
      */
-    function nodeAddLiquidity(uint128 amount)
-        public
-        checkAmount(amount)
-        returns (uint48 resNode)
-    {
+    function nodeAddLiquidity(
+        uint128 amount
+    ) public checkAmount(amount) returns (uint48 resNode) {
         if (nextNode > LIQUIDITYLASTNODE) revert LeafNumberRangeExceeded();
         updateUp(nextNode, amount, false, ++updateId);
         resNode = nextNode;
@@ -95,11 +93,9 @@ contract LiquidityTree {
      * @param leaf - withdrawing leaf
      * @return withdrawAmount - withdrawal preview amount of the leaf
      */
-    function nodeWithdrawView(uint48 leaf)
-        public
-        view
-        returns (uint128 withdrawAmount)
-    {
+    function nodeWithdrawView(
+        uint48 leaf
+    ) public view returns (uint128 withdrawAmount) {
         if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE) return 0;
         if (treeNode[leaf].updateId == 0) return 0;
 
@@ -124,11 +120,10 @@ contract LiquidityTree {
      * @param percent - percent of leaf amount 1*10^12 is 100%, 5*10^11 is 50%
      * @return withdrawAmount - withdrawn amount of the leaf according percent share
      */
-    function nodeWithdrawPercent(uint48 leaf, uint40 percent)
-        public
-        checkLeaf(leaf)
-        returns (uint128 withdrawAmount)
-    {
+    function nodeWithdrawPercent(
+        uint48 leaf,
+        uint40 percent
+    ) public checkLeaf(leaf) returns (uint128 withdrawAmount) {
         if (treeNode[leaf].updateId == 0) revert LeafNotExist();
         if (percent > DECIMALS) revert IncorrectPercent();
 
@@ -195,11 +190,10 @@ contract LiquidityTree {
      * @dev add amount only for limited leaves in tree [first_leaf, leaf]
      * @param amount value to add
      */
-    function addLimit(uint128 amount, uint48 leaf)
-        public
-        checkLeaf(leaf)
-        checkAmount(amount)
-    {
+    function addLimit(
+        uint128 amount,
+        uint48 leaf
+    ) public checkLeaf(leaf) checkAmount(amount) {
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
 
@@ -235,11 +229,10 @@ contract LiquidityTree {
      * @dev remove amount only for limited leaves in tree [first_leaf, leaf]
      * @param amount value to remove
      */
-    function removeLimit(uint128 amount, uint48 leaf)
-        public
-        checkLeaf(leaf)
-        checkAmount(amount)
-    {
+    function removeLimit(
+        uint128 amount,
+        uint48 leaf
+    ) public checkLeaf(leaf) checkAmount(amount) {
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
         if (treeNode[1].amount < amount) revert InsufficientTopNodeAmount();
@@ -647,11 +640,7 @@ contract LiquidityTree {
      * @param amount value
      * @param updateId_ update number
      */
-    function setAmount(
-        uint48 node,
-        uint128 amount,
-        uint64 updateId_
-    ) internal {
+    function setAmount(uint48 node, uint128 amount, uint64 updateId_) internal {
         if (treeNode[node].amount != amount) {
             treeNode[node].updateId = updateId_;
             treeNode[node].amount = amount;
@@ -663,11 +652,9 @@ contract LiquidityTree {
      * @param fromNumber - get parent from some child
      * @return parentNumber - found parent
      */
-    function getParent(uint48 fromNumber)
-        public
-        pure
-        returns (uint48 parentNumber)
-    {
+    function getParent(
+        uint48 fromNumber
+    ) public pure returns (uint48 parentNumber) {
         // if requested from top
         if (fromNumber == 1) {
             return 1;
