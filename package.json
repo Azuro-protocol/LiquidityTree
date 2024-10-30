@@ -17,8 +17,7 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "prettier_sol": "prettier --write \"contracts/**/*.sol\"",
-    "prettier-test": "npx prettier --write test --print-width 120 --tab-width 2",
-    "prettier-scripts": "npx prettier --write scripts --print-width 120 --tab-width 2"
+    "prettier_sol": "npx prettier --write --plugin=prettier-plugin-solidity \"contracts/**/*.sol\"",
+    "prettier-test": "npx prettier --write {test,utils}/*.js --print-width 120 --tab-width 2"
   }
 }
