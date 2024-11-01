@@ -439,13 +439,13 @@ describe("LiquidityTree", () => {
 
       // checksum correctness node = left child + right child
       expect((await getNodeAmount(sTree, 4)) + (await getNodeAmount(sTree, 5))).to.be.equal(
-        await getNodeAmount(sTree, 2)
+        await getNodeAmount(sTree, 2),
       );
       expect((await getNodeAmount(sTree, 10)) + (await getNodeAmount(sTree, 11))).to.be.equal(
-        await getNodeAmount(sTree, 5)
+        await getNodeAmount(sTree, 5),
       );
       expect((await getNodeAmount(sTree, 23)) + (await getNodeAmount(sTree, 22))).to.be.equal(
-        await getNodeAmount(sTree, 11)
+        await getNodeAmount(sTree, 11),
       );
       // check leaves total 17-23 amount equal top node
       expect(await getNodeAmount(sTree, 1)).to.be.eq(
@@ -456,7 +456,7 @@ describe("LiquidityTree", () => {
           (await sTree.nodeWithdrawView(19)) +
           (await sTree.nodeWithdrawView(18)) +
           (await sTree.nodeWithdrawView(17)) +
-          (await sTree.nodeWithdrawView(16))
+          (await sTree.nodeWithdrawView(16)),
       );
 
       //addLimit only for leaves [16-22], 23 not included
@@ -499,13 +499,13 @@ describe("LiquidityTree", () => {
 
       // checksum correctness node = left child + right child
       expect((await getNodeAmount(sTree, 4)) + (await getNodeAmount(sTree, 5))).to.be.equal(
-        await getNodeAmount(sTree, 2)
+        await getNodeAmount(sTree, 2),
       );
       expect((await getNodeAmount(sTree, 10)) + (await getNodeAmount(sTree, 11))).to.be.equal(
-        await getNodeAmount(sTree, 5)
+        await getNodeAmount(sTree, 5),
       );
       expect((await getNodeAmount(sTree, 23)) + (await getNodeAmount(sTree, 22))).to.be.equal(
-        await getNodeAmount(sTree, 11)
+        await getNodeAmount(sTree, 11),
       );
       // check leaves total 17-23 amount equal top node
       expect(await getNodeAmount(sTree, 1)).to.be.eq(
@@ -516,7 +516,7 @@ describe("LiquidityTree", () => {
           (await sTree.nodeWithdrawView(19)) +
           (await sTree.nodeWithdrawView(18)) +
           (await sTree.nodeWithdrawView(17)) +
-          (await sTree.nodeWithdrawView(16))
+          (await sTree.nodeWithdrawView(16)),
       );
 
       // withdraw all and check tree zeroed
@@ -838,7 +838,7 @@ describe("LiquidityTree", () => {
         expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(17))).to.be.equal(withdrawView17);
         // get 50 % of leaf 18 (90)
         expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdrawPercent(18, WITHDRAW_50_PERCENT))).to.be.equal(
-          tokens(45)
+          tokens(45),
         );
         // get rest of leaf 18 (45)
         let withdrawView18 = await sTree.nodeWithdrawView(18);

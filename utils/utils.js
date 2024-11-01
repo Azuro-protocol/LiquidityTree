@@ -37,7 +37,7 @@ const getNodeAmount = async (sTree, node) => {
 };
 
 const prepareTree = async (ethers, leafs) => {
-  const LIQUIDITYTREE = await ethers.getContractFactory("LiquidityTree");
+  const LIQUIDITYTREE = await ethers.getContractFactory("LiquidityProtocol");
   let tree = await LIQUIDITYTREE.deploy(leafs);
   await tree.waitForDeployment();
   return tree;
@@ -60,5 +60,5 @@ module.exports = {
   getBlockTime,
   getNodeAmount,
   prepareTree,
-  getWithdrawnAmount
+  getWithdrawnAmount,
 };
