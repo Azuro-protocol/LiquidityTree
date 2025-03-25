@@ -536,8 +536,9 @@ contract LiquidityTree is ILiquidityTree {
 
                 // if reduced amount is not sufficient for each child - need to update whole tree
                 if (
-                    (isSub && (rAmount < amount - forLeftAmount)) &&
-                    lAmount < forLeftAmount
+                    (isSub &&
+                        lAmount < forLeftAmount &&
+                        (sumAmounts - lAmount < amount - forLeftAmount))
                 ) return true;
 
                 // l in [start,mid] - part in left child or
