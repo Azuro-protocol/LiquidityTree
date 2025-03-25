@@ -201,7 +201,7 @@ contract LiquidityTree is ILiquidityTree {
      */
     function _nodeWithdraw(
         uint48 leaf
-    ) public returns (uint128 withdrawAmount) {
+    ) internal returns (uint128 withdrawAmount) {
         withdrawAmount = _nodeWithdrawPercent(leaf, uint40(FixedMath.ONE));
     }
 
@@ -402,7 +402,7 @@ contract LiquidityTree is ILiquidityTree {
     function _removeLimit(
         uint128 amount,
         uint48 leaf
-    ) public checkLeaf(leaf) checkAmount(amount) {
+    ) internal checkLeaf(leaf) checkAmount(amount) {
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
         if (treeNode[1].amount < amount) revert InsufficientTopNodeAmount();
