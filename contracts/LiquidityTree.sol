@@ -23,7 +23,7 @@ contract LiquidityTree is ILiquidityTree {
     // liquidity (segment) tree
     mapping(uint48 => Node) public treeNode;
 
-    event withdrawn(address wallet, uint128 amount);
+    event Withdrawn(address wallet, uint128 amount);
 
     error IncorrectAmount();
     error IncorrectLeaf();
@@ -231,7 +231,7 @@ contract LiquidityTree is ILiquidityTree {
 
         _updateUp(leaf, withdrawAmount, true, ++updateId);
 
-        emit withdrawn(msg.sender, withdrawAmount);
+        emit Withdrawn(msg.sender, withdrawAmount);
     }
 
     /**
