@@ -45,7 +45,7 @@ const prepareTree = async (ethers, leafs) => {
 
 const getWithdrawnAmount = async (contract, tx) => {
   await tx.wait();
-  const events = await contract.queryFilter(contract.filters.withdrawn, -1);
+  const events = await contract.queryFilter(contract.filters.Withdrawn, -1);
   await newBlock(); // mine new block for correctly getting events (every withdraw transaction at new block)
   return events[0].transactionHash == tx.hash ? events[0].args[1] : 0n;
 };
