@@ -688,7 +688,7 @@ contract LiquidityTree is ILiquidityTree {
         uint48 rChild = node * 2 + 1;
         uint256 lAmount = treeNode[lChild].amount;
         uint256 rAmount = treeNode[rChild].amount;
-        uint256 sumAmounts = lAmount + treeNode[rChild].amount;
+        uint256 sumAmounts = lAmount + rAmount;
         uint128 setLAmount = sumAmounts == 0
             ? 0
             : uint128((amount * lAmount) / sumAmounts);
