@@ -14,7 +14,9 @@ contract LiquidityTree is ILiquidityTree {
     }
 
     uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
-    uint48 immutable LIQUIDITYLASTNODE; // LIQUIDITYNODES * 2 - 1
+    uint48 immutable LIQUIDITYMAXNODE; // the biggest possible size of the tree
+    uint48 public liquidityLastNode;
+    uint48 public root;
 
     uint48 public nextNode; // next unused node number for adding liquidity
 
@@ -56,12 +58,24 @@ contract LiquidityTree is ILiquidityTree {
             | 4 (nextNode)|     5    |    6    |    7    |
             +-------------+----------+---------+---------+
      * @param liquidityNodes count of leaves - possible single liquidity addings
+     * @param dynamicSize if true, the tree will initially have 1 leaf, and then double its size every time it's needed
+     *                    if false, constant size always
      */
-    constructor(uint48 liquidityNodes) {
+    constructor(uint48 liquidityNodes, bool dynamicSize) {
         LIQUIDITYNODES = liquidityNodes;
-        LIQUIDITYLASTNODE = liquidityNodes * 2 - 1;
+        LIQUIDITYMAXNODE = liquidityNodes * 2 - 1;
         nextNode = liquidityNodes;
         updateId++; // start from non zero
+
+        if (dynamicSize) {
+            // the tree starts to increase from the middle
+            liquidityLastNode = liquidityNodes;
+            root = liquidityNodes;
+        } else {
+            // the whole tree initialized
+            liquidityLastNode = LIQUIDITYMAXNODE;
+            root = 1;
+        }
     }
 
     /**
@@ -72,16 +86,16 @@ contract LiquidityTree is ILiquidityTree {
     function nodeWithdrawView(
         uint48 leaf
     ) public view override returns (uint128 withdrawAmount) {
-        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE) return 0;
+        if (leaf < LIQUIDITYNODES || leaf > liquidityLastNode) return 0;
         if (treeNode[leaf].updateId == 0) return 0;
 
         return
             _getPushView(
-                1,
+                root,
                 LIQUIDITYNODES,
-                LIQUIDITYLASTNODE,
+                liquidityLastNode,
                 leaf,
-                treeNode[1].amount
+                treeNode[root].amount
             );
     }
 
@@ -93,16 +107,16 @@ contract LiquidityTree is ILiquidityTree {
         // if no leaves, distribution to the whole tree
         uint48 leaf = nextNode > LIQUIDITYNODES
             ? nextNode - 1
-            : LIQUIDITYLASTNODE;
+            : liquidityLastNode;
 
         // push changes from top node down to the leaf
-        if (treeNode[1].amount != 0)
-            _push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        if (treeNode[root].amount != 0)
+            _push(root, LIQUIDITYNODES, liquidityLastNode, leaf, ++updateId);
 
         _pushLazy(
-            1,
+            root,
             LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
+            liquidityLastNode,
             LIQUIDITYNODES,
             leaf,
             amount,
@@ -122,12 +136,12 @@ contract LiquidityTree is ILiquidityTree {
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
 
-        _push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        _push(root, LIQUIDITYNODES, liquidityLastNode, leaf, ++updateId);
         if (
             _isNeedUpdateWholeLeaves(
-                1,
+                root,
                 LIQUIDITYNODES,
-                LIQUIDITYLASTNODE,
+                liquidityLastNode,
                 LIQUIDITYNODES,
                 leaf,
                 amount,
@@ -135,13 +149,13 @@ contract LiquidityTree is ILiquidityTree {
             )
         ) {
             leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
-            _push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+            _push(root, LIQUIDITYNODES, liquidityLastNode, leaf, ++updateId);
         }
 
         _pushLazy(
-            1,
+            root,
             LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
+            liquidityLastNode,
             LIQUIDITYNODES,
             leaf,
             amount,
@@ -183,8 +197,24 @@ contract LiquidityTree is ILiquidityTree {
     function _nodeAddLiquidity(
         uint128 amount
     ) internal checkAmount(amount) returns (uint48 resNode) {
-        if (nextNode > LIQUIDITYLASTNODE) revert LeafNumberRangeExceeded();
-        _updateUp(nextNode, amount, false, ++updateId);
+        if (nextNode > LIQUIDITYMAXNODE) revert LeafNumberRangeExceeded();
+        uint64 updateId_ = ++updateId;
+        
+        // when a tree leaves number limit is exceeded, it needs to become bigger
+        if (nextNode > liquidityLastNode) {
+            // double the number of leaves
+            liquidityLastNode += nextNode - LIQUIDITYNODES;
+            
+            // initialize new root
+            uint48 oldRoot_ = root;
+            uint48 newRoot_ = oldRoot_ / 2;
+            root = newRoot_;
+
+            // update new root of the tree with the top amount
+            treeNode[newRoot_].updateId = updateId_;
+            treeNode[newRoot_].amount = treeNode[oldRoot_].amount;
+        }
+        _updateUp(nextNode, amount, false, updateId_);
         resNode = nextNode;
         nextNode++;
     }
@@ -224,7 +254,7 @@ contract LiquidityTree is ILiquidityTree {
         if (percent > FixedMath.ONE) revert IncorrectPercent();
 
         // push changes from top node down to the leaf, if leaf is not up to date
-        _push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        _push(root, LIQUIDITYNODES, liquidityLastNode, leaf, ++updateId);
 
         // remove amount (percent of amount) from leaf to it's parents
         withdrawAmount = uint128(treeNode[leaf].amount.mul(percent));
@@ -297,7 +327,7 @@ contract LiquidityTree is ILiquidityTree {
         bool isSub,
         uint64 updateId_
     ) internal {
-        if (node == 1 && !isSub && treeNode[node].amount == 0) {
+        if (node == root && !isSub && treeNode[node].amount == 0) {
             _changeAmount(node, amount, isSub, updateId_);
             return;
         }
@@ -323,7 +353,7 @@ contract LiquidityTree is ILiquidityTree {
                 uint256 sumAmounts = lAmount + rAmount;
 
                 if (sumAmounts == 0) {
-                    if (node == 1 || (treeNode[node].amount > 0))
+                    if (node == root || (treeNode[node].amount > 0))
                         _changeAmount(node, amount, isSub, updateId_);
                     return;
                 }
@@ -368,7 +398,7 @@ contract LiquidityTree is ILiquidityTree {
                 updateId_
             );
         }
-        if (node == 1 || (treeNode[node].amount > 0))
+        if (node == root || (treeNode[node].amount > 0))
             _changeAmount(node, amount, isSub, updateId_);
     }
 
@@ -377,16 +407,16 @@ contract LiquidityTree is ILiquidityTree {
      * @param amount value to removeamount
      */
     function _remove(uint128 amount) internal checkAmount(amount) {
-        if (treeNode[1].amount < amount) revert InsufficientTopNodeAmount();
+        if (treeNode[root].amount < amount) revert InsufficientTopNodeAmount();
 
         uint48 leaf = nextNode - 1;
         // push changes from top node down to the leaf
-        _push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        _push(root, LIQUIDITYNODES, liquidityLastNode, leaf, ++updateId);
 
         _pushLazy(
-            1,
+            root,
             LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
+            liquidityLastNode,
             LIQUIDITYNODES,
             leaf,
             amount,
@@ -405,14 +435,14 @@ contract LiquidityTree is ILiquidityTree {
     ) internal checkLeaf(leaf) checkAmount(amount) {
         uint48 lastUsedNode = nextNode - 1;
         if (leaf > lastUsedNode) leaf = lastUsedNode;
-        if (treeNode[1].amount < amount) revert InsufficientTopNodeAmount();
+        if (treeNode[root].amount < amount) revert InsufficientTopNodeAmount();
 
-        _push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+        _push(root, LIQUIDITYNODES, liquidityLastNode, leaf, ++updateId);
         if (
             _isNeedUpdateWholeLeaves(
-                1,
+                root,
                 LIQUIDITYNODES,
-                LIQUIDITYLASTNODE,
+                liquidityLastNode,
                 LIQUIDITYNODES,
                 leaf,
                 amount,
@@ -420,13 +450,13 @@ contract LiquidityTree is ILiquidityTree {
             )
         ) {
             leaf = lastUsedNode; // push to the all used leaves [LIQUIDITYNODES, lastUsedNode]
-            _push(1, LIQUIDITYNODES, LIQUIDITYLASTNODE, leaf, ++updateId);
+            _push(root, LIQUIDITYNODES, liquidityLastNode, leaf, ++updateId);
         }
 
         _pushLazy(
-            1,
+            root,
             LIQUIDITYNODES,
-            LIQUIDITYLASTNODE,
+            liquidityLastNode,
             LIQUIDITYNODES,
             leaf,
             amount,
@@ -467,7 +497,7 @@ contract LiquidityTree is ILiquidityTree {
     ) internal {
         _changeAmount(child, amount, isSub, updateId_);
         // if not top parent
-        if (child != 1) {
+        if (child != root) {
             _updateUp(_getParent(child), amount, isSub, updateId_);
         }
     }
@@ -655,10 +685,10 @@ contract LiquidityTree is ILiquidityTree {
      */
     function _getParent(
         uint48 fromNumber
-    ) internal pure returns (uint48 parentNumber) {
+    ) internal view returns (uint48 parentNumber) {
         // if requested from top
-        if (fromNumber == 1) {
-            return 1;
+        if (fromNumber == root) {
+            return root;
         }
         return fromNumber / 2;
     }
@@ -719,7 +749,7 @@ contract LiquidityTree is ILiquidityTree {
     }
 
     function _checkLeaf(uint48 leaf) internal view {
-        if (leaf < LIQUIDITYNODES || leaf > LIQUIDITYLASTNODE)
+        if (leaf < LIQUIDITYNODES || leaf > liquidityLastNode)
             revert IncorrectLeaf();
     }
 }
