@@ -44,7 +44,7 @@ describe("LiquidityTree", () => {
   let sTree, firstLeaf;
   describe("Big tree", async () => {
     beforeEach(async () => {
-      sTree = await prepareTree(ethers, BIG_TREE_LEAFS);
+      sTree = await prepareTree(ethers, BIG_TREE_LEAFS, true);
       firstLeaf = await sTree.nextNode();
     });
     it("100 zero profit distributions on 100 leaves", async () => {
@@ -114,7 +114,7 @@ describe("LiquidityTree", () => {
           await sTree.nodeAddLiquidity(TOKENS_100);
         }
         lastFilledLeaf = (await sTree.nextNode()) - 1n;
-        initLiquidity = (await sTree.treeNode(1)).amount;
+        initLiquidity = (await sTree.treeNode(await sTree.root())).amount;
 
         // get 100 for the "game"
         await sTree.remove(TOKENS_100);
@@ -129,7 +129,7 @@ describe("LiquidityTree", () => {
         }
 
         // all withdrawn
-        expect((await sTree.treeNode(1)).amount).to.be.equal(ZERO);
+        expect((await sTree.treeNode((await sTree.root()))).amount).to.be.equal(ZERO);
         // withdrawn sum is all deposited + distributed 100
         expect(totalWitdrawn).to.be.equal(initLiquidity + TOKENS_100);
       });
@@ -143,7 +143,7 @@ describe("LiquidityTree", () => {
         }
 
         // all withdrawn
-        expect((await sTree.treeNode(1)).amount).to.be.equal(ZERO);
+        expect((await sTree.treeNode((await sTree.root()))).amount).to.be.equal(ZERO);
         // withdrawn sum is all deposited - distributed 90 loss
         expect(totalWitdrawn).to.be.equal(initLiquidity - TOKENS_90);
       });
@@ -151,7 +151,7 @@ describe("LiquidityTree", () => {
   });
   describe("small tree (16 leaves)", (async) => {
     beforeEach(async () => {
-      sTree = await prepareTree(ethers, SMALL_TREE_LEAFS);
+      sTree = await prepareTree(ethers, SMALL_TREE_LEAFS, false);
     });
     it("add liquidity to 7 leafs, top add 70, withdraw leaf", async () => {
       for (const i of Array(7).keys()) {
@@ -874,7 +874,7 @@ describe("LiquidityTree", () => {
   });
   describe("small tree (16 leaves) with empty lists", (async) => {
     beforeEach(async () => {
-      sTree = await prepareTree(ethers, SMALL_TREE_LEAFS);
+      sTree = await prepareTree(ethers, SMALL_TREE_LEAFS, false);
     });
     it("add liquidity to 2 leafs, withdraw first leaf, removeLimit first", async () => {
       for (const i of Array(2).keys()) {
@@ -1707,7 +1707,7 @@ describe("LiquidityTree", () => {
   });
   describe("Example tree (4 leaves)", async () => {
     before(async () => {
-      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS);
+      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, false);
     });
     it("nodeAddLiquidity(100$)", async () => {
       await sTree.nodeAddLiquidity(TOKENS_100);
@@ -1810,7 +1810,7 @@ describe("LiquidityTree", () => {
   });
   describe("Example tree (4 leaves) fair distribution", async () => {
     before(async () => {
-      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS);
+      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, false);
     });
     it("add liquidity 10$ in each of 4 leafs", async () => {
       await sTree.nodeAddLiquidity(TOKENS_10);
@@ -1926,7 +1926,7 @@ describe("LiquidityTree", () => {
   });
   describe("Example tree (4 leaves) fair distribution removing from range with 0", async () => {
     beforeEach(async () => {
-      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS);
+      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, false);
     });
     it("add liquidity 60$ for all leaves on tree, withdraw #5, removeLimit(50, 6)", async () => {
       for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(TOKENS_60);
@@ -2048,7 +2048,7 @@ describe("LiquidityTree", () => {
   });
   describe("Example tree (4 leaves) fair distribution Alice, Bob, Clarc", async () => {
     beforeEach(async () => {
-      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS);
+      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, false);
     });
     it("There are 10000$ of liquidity, Bob added 1000$, remove 2000$ lose of leaves 4, 5, Clarc not affected", async () => {
       // Alice and Bob added
@@ -2158,7 +2158,7 @@ describe("LiquidityTree", () => {
   });
   describe("Example tree (2 leaves) fair distribution", async () => {
     before(async () => {
-      sTree = await prepareTree(ethers, TINY_TREE_LEAFS);
+      sTree = await prepareTree(ethers, TINY_TREE_LEAFS, false);
     });
     it("add liquidity 10$ in each of 2 leafs", async () => {
       await sTree.nodeAddLiquidity(TOKENS_10);
@@ -2206,7 +2206,7 @@ describe("LiquidityTree", () => {
   });
   describe("Example tree (8 leaves) fair distribution", async () => {
     beforeEach(async () => {
-      sTree = await prepareTree(ethers, MIDDLE_TREE_LEAFS);
+      sTree = await prepareTree(ethers, MIDDLE_TREE_LEAFS, false);
     });
     it("add liquidity 45$, remove 45$, try withdraw it", async () => {
       // Add three leaves so the one we will be using is the last of the left "main branch"
@@ -3684,7 +3684,7 @@ describe("LiquidityTree", () => {
     it("addLimit(100, 8) to empty tree after series of depo/withdraw", async () => {
       describe("Example tree (8 leaves) fair distribution", async () => {
         beforeEach(async () => {
-          sTree = await prepareTree(ethers, MIDDLE_TREE_LEAFS);
+          sTree = await prepareTree(ethers, MIDDLE_TREE_LEAFS, false);
           // depo/withdraw #8-#12
           for (const i of Array(5).keys()) {
             await sTree.nodeAddLiquidity(1);
