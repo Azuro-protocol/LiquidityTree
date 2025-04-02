@@ -15,8 +15,8 @@ contract LiquidityTree is ILiquidityTree {
 
     uint48 immutable LIQUIDITYNODES; // = 1_099_511_627_776; // begining of data nodes (top at node #1)
     uint48 immutable LIQUIDITYMAXNODE; // the biggest possible size of the tree
-    uint48 public liquidityLastNode;
-    uint48 public root;
+    uint48 public liquidityLastNode; // current maximum usable leaf of the tree
+    uint48 public root; // current root of the tree
 
     uint48 public nextNode; // next unused node number for adding liquidity
 
