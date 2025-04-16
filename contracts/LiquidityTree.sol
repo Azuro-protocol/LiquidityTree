@@ -199,12 +199,12 @@ contract LiquidityTree is ILiquidityTree {
     ) internal checkAmount(amount) returns (uint48 resNode) {
         if (nextNode > LIQUIDITYMAXNODE) revert LeafNumberRangeExceeded();
         uint64 updateId_ = ++updateId;
-        
+
         // when a tree leaves number limit is exceeded, it needs to become bigger
         if (nextNode > liquidityLastNode) {
             // double the number of leaves
             liquidityLastNode += nextNode - LIQUIDITYNODES;
-            
+
             // initialize new root
             uint48 oldRoot_ = root;
             uint48 newRoot_ = oldRoot_ / 2;
@@ -409,7 +409,11 @@ contract LiquidityTree is ILiquidityTree {
     function _remove(uint128 amount) internal checkAmount(amount) {
         if (treeNode[root].amount < amount) revert InsufficientTopNodeAmount();
 
-        uint48 leaf = nextNode - 1;
+        // if no leaves, remove from the whole tree
+        uint48 leaf = nextNode > LIQUIDITYNODES
+            ? nextNode - 1
+            : liquidityLastNode;
+
         // push changes from top node down to the leaf
         _push(root, LIQUIDITYNODES, liquidityLastNode, leaf, ++updateId);
 

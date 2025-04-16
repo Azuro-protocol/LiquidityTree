@@ -8,7 +8,10 @@ import "../interface/ILiquidityTree.sol";
 interface ILiquidityProtocol is ILiquidityTree {}
 
 contract LiquidityProtocol is LiquidityTree {
-    constructor(uint48 liquidityNodes, bool dynamicSize) LiquidityTree(liquidityNodes, dynamicSize) {}
+    constructor(
+        uint48 liquidityNodes,
+        bool dynamicSize
+    ) LiquidityTree(liquidityNodes, dynamicSize) {}
 
     function add(uint128 amount) external {
         _add(amount);
