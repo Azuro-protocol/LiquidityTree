@@ -3373,400 +3373,411 @@ describe("LiquidityTree", () => {
       expect(await getWithdrawnAmount(sTree, tx5)).to.be.equal(withdrawAmount5);
     });
   });
-  describe("Example tree (4 leaves) fair distribution", async () => {
-    before(async () => {
-      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, false);
-    });
-    it("add liquidity 10$ in each of 4 leafs", async () => {
-      await sTree.nodeAddLiquidity(TOKENS_10);
-      await sTree.nodeAddLiquidity(TOKENS_10);
-      await sTree.nodeAddLiquidity(TOKENS_10);
-      await sTree.nodeAddLiquidity(TOKENS_10);
+  IS_DYNAMIC.forEach((isDynamic) => {
+    describe(`Example tree (4 leaves) fair distribution ${isDynamic ? "dynamic" : "static"}`, async () => {
+      before(async () => {
+        sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, isDynamic);
+      });
+      it("add liquidity 10$ in each of 4 leafs", async () => {
+        await sTree.nodeAddLiquidity(TOKENS_10);
+        await sTree.nodeAddLiquidity(TOKENS_10);
+        await sTree.nodeAddLiquidity(TOKENS_10);
+        await sTree.nodeAddLiquidity(TOKENS_10);
 
-      await checkNodeAmountTo(sTree, 1, TOKENS_40);
-      await checkNodeAmountTo(sTree, 2, TOKENS_20);
-      await checkNodeAmountTo(sTree, 3, TOKENS_20);
-      await checkNodeAmountTo(sTree, 4, TOKENS_10);
-      await checkNodeAmountTo(sTree, 5, TOKENS_10);
-      await checkNodeAmountTo(sTree, 6, TOKENS_10);
-      await checkNodeAmountTo(sTree, 7, TOKENS_10);
+        await checkNodeAmountTo(sTree, 1, TOKENS_40);
+        await checkNodeAmountTo(sTree, 2, TOKENS_20);
+        await checkNodeAmountTo(sTree, 3, TOKENS_20);
+        await checkNodeAmountTo(sTree, 4, TOKENS_10);
+        await checkNodeAmountTo(sTree, 5, TOKENS_10);
+        await checkNodeAmountTo(sTree, 6, TOKENS_10);
+        await checkNodeAmountTo(sTree, 7, TOKENS_10);
 
-      /*
-      +--------------------------------------------+
-      |                    1 (40$)                 |
-      +------------------------+-------------------+
-      |         2 (20$)        |     3 (20$)       |
-      +-------------+----------+---------+---------+
-      |   4 (10$)   |  5 (10$) | 6 (10$) | 7 (10$) |
-      +-------------+----------+---------+---------+
-      */
-    });
-    it("add 40$ to the whole tree", async () => {
-      await sTree.add(tokens(40));
+        /*
+        +--------------------------------------------+
+        |                    1 (40$)                 |
+        +------------------------+-------------------+
+        |         2 (20$)        |     3 (20$)       |
+        +-------------+----------+---------+---------+
+        |   4 (10$)   |  5 (10$) | 6 (10$) | 7 (10$) |
+        +-------------+----------+---------+---------+
+        */
+      });
+      it("add 40$ to the whole tree", async () => {
+        await sTree.add(tokens(40));
 
-      await checkNodeAmountTo(sTree, 1, TOKENS_80);
-      await checkNodeAmountTo(sTree, 2, TOKENS_20);
-      await checkNodeAmountTo(sTree, 3, TOKENS_20);
-      await checkNodeAmountTo(sTree, 4, TOKENS_10);
-      await checkNodeAmountTo(sTree, 5, TOKENS_10);
-      await checkNodeAmountTo(sTree, 6, TOKENS_10);
-      await checkNodeAmountTo(sTree, 7, TOKENS_10);
+        await checkNodeAmountTo(sTree, 1, TOKENS_80);
+        await checkNodeAmountTo(sTree, 2, TOKENS_20);
+        await checkNodeAmountTo(sTree, 3, TOKENS_20);
+        await checkNodeAmountTo(sTree, 4, TOKENS_10);
+        await checkNodeAmountTo(sTree, 5, TOKENS_10);
+        await checkNodeAmountTo(sTree, 6, TOKENS_10);
+        await checkNodeAmountTo(sTree, 7, TOKENS_10);
 
-      /*
-      +--------------------------------------------+
-      |                    1 (80$)                 |
-      +------------------------+-------------------+
-      |         2 (20$)        |     3 (20$)       |
-      +-------------+----------+---------+---------+
-      |   4 (10$)   |  5 (10$) | 6 (10$) | 7 (10$) |
-      +-------------+----------+---------+---------+
-      */
-    });
-    it("withdraw whole liquidity from leaf #5", async () => {
-      await sTree.nodeWithdrawPercent(5, WITHDRAW_100_PERCENT);
+        /*
+        +--------------------------------------------+
+        |                    1 (80$)                 |
+        +------------------------+-------------------+
+        |         2 (20$)        |     3 (20$)       |
+        +-------------+----------+---------+---------+
+        |   4 (10$)   |  5 (10$) | 6 (10$) | 7 (10$) |
+        +-------------+----------+---------+---------+
+        */
+      });
+      it("withdraw whole liquidity from leaf #5", async () => {
+        await sTree.nodeWithdrawPercent(5, WITHDRAW_100_PERCENT);
 
-      await checkNodeAmountTo(sTree, 1, TOKENS_60);
-      await checkNodeAmountTo(sTree, 2, TOKENS_20);
-      await checkNodeAmountTo(sTree, 3, TOKENS_40);
-      await checkNodeAmountTo(sTree, 4, TOKENS_20);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, TOKENS_10);
-      await checkNodeAmountTo(sTree, 7, TOKENS_10);
+        await checkNodeAmountTo(sTree, 1, TOKENS_60);
+        await checkNodeAmountTo(sTree, 2, TOKENS_20);
+        await checkNodeAmountTo(sTree, 3, TOKENS_40);
+        await checkNodeAmountTo(sTree, 4, TOKENS_20);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, TOKENS_10);
+        await checkNodeAmountTo(sTree, 7, TOKENS_10);
 
-      /*
-      +--------------------------------------------+
-      |                    1 (60$)                 |
-      +------------------------+-------------------+
-      |         2 (20$)        |     3 (40$)       |
-      +-------------+----------+---------+---------+
-      |   4 (20$)   |  5 (0$)  | 6 (10$) | 7 (10$) |
-      +-------------+----------+---------+---------+
-      */
-    });
-    it("add liquidity 50$ on tree for only leaves 4,5,6", async () => {
-      await sTree.addLimit(TOKENS_50, 6);
+        /*
+        +--------------------------------------------+
+        |                    1 (60$)                 |
+        +------------------------+-------------------+
+        |         2 (20$)        |     3 (40$)       |
+        +-------------+----------+---------+---------+
+        |   4 (20$)   |  5 (0$)  | 6 (10$) | 7 (10$) |
+        +-------------+----------+---------+---------+
+        */
+      });
+      it("add liquidity 50$ on tree for only leaves 4,5,6", async () => {
+        await sTree.addLimit(TOKENS_50, 6);
 
-      await checkNodeAmountTo(sTree, 1, tokens(110));
-      await checkNodeAmountTo(sTree, 2, TOKENS_45);
-      await checkNodeAmountTo(sTree, 3, tokens(65));
-      await checkNodeAmountTo(sTree, 4, TOKENS_20);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, TOKENS_45);
-      await checkNodeAmountTo(sTree, 7, TOKENS_20);
+        await checkNodeAmountTo(sTree, 1, tokens(110));
+        await checkNodeAmountTo(sTree, 2, TOKENS_45);
+        await checkNodeAmountTo(sTree, 3, tokens(65));
+        await checkNodeAmountTo(sTree, 4, TOKENS_20);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, TOKENS_45);
+        await checkNodeAmountTo(sTree, 7, TOKENS_20);
 
-      /*
-      +--------------------------------------------+
-      |                    1 (110$)                |
-      +------------------------+-------------------+
-      |         2 (45$)        |     3 (65$)       |
-      +-------------+----------+---------+---------+
-      |   4 (20$)   |  5 (0$)  | 6 (45$) | 7 (20$) |
-      +-------------+----------+---------+---------+
-      */
-      let withdrawView4 = await sTree.nodeWithdrawView(4);
-      let withdrawView6 = await sTree.nodeWithdrawView(6);
-      expect(withdrawView4).to.be.equal(TOKENS_45);
-      expect(withdrawView6).to.be.equal(TOKENS_45);
-      expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(4))).to.be.equal(withdrawView4);
-      expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(6))).to.be.equal(withdrawView6);
+        /*
+        +--------------------------------------------+
+        |                    1 (110$)                |
+        +------------------------+-------------------+
+        |         2 (45$)        |     3 (65$)       |
+        +-------------+----------+---------+---------+
+        |   4 (20$)   |  5 (0$)  | 6 (45$) | 7 (20$) |
+        +-------------+----------+---------+---------+
+        */
+        let withdrawView4 = await sTree.nodeWithdrawView(4);
+        let withdrawView6 = await sTree.nodeWithdrawView(6);
+        expect(withdrawView4).to.be.equal(TOKENS_45);
+        expect(withdrawView6).to.be.equal(TOKENS_45);
+        expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(4))).to.be.equal(withdrawView4);
+        expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(6))).to.be.equal(withdrawView6);
 
-      /*
-      +--------------------------------------------+
-      |                     1 (20$)                |
-      +------------------------+-------------------+
-      |          2 (0$)        |     3 (20$)       |
-      +-------------+----------+---------+---------+
-      |    4 (0$)   |  5 (0$)  |  6 (0$) | 7 (20$) |
-      +-------------+----------+---------+---------+
-      */
+        /*
+        +--------------------------------------------+
+        |                     1 (20$)                |
+        +------------------------+-------------------+
+        |          2 (0$)        |     3 (20$)       |
+        +-------------+----------+---------+---------+
+        |    4 (0$)   |  5 (0$)  |  6 (0$) | 7 (20$) |
+        +-------------+----------+---------+---------+
+        */
 
-      await checkNodeAmountTo(sTree, 1, TOKENS_20);
-      await checkNodeAmountTo(sTree, 2, ZERO);
-      await checkNodeAmountTo(sTree, 3, TOKENS_20);
-      await checkNodeAmountTo(sTree, 4, ZERO);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, ZERO);
-      await checkNodeAmountTo(sTree, 7, TOKENS_20);
-    });
-  });
-  describe("Example tree (4 leaves) fair distribution removing from range with 0", async () => {
-    beforeEach(async () => {
-      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, false);
-    });
-    it("add liquidity 60$ for all leaves on tree, withdraw #5, removeLimit(50, 6)", async () => {
-      for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(TOKENS_60);
-      await sTree.nodeWithdraw(5);
-      /*
-      +--------------------------------------------+
-      |                    1 (180$)                |
-      +------------------------+-------------------+
-      |         2 (60$)        |     3 (120$)      |
-      +-------------+----------+---------+---------+
-      |   4 (60$)   |  5 (0$)  | 6 (60$) | 7 (60$) |
-      +-------------+----------+---------+---------+
-      */
-      await checkNodeAmountTo(sTree, 1, tokens(180));
-      await checkNodeAmountTo(sTree, 2, TOKENS_60);
-      await checkNodeAmountTo(sTree, 3, tokens(120));
-      await checkNodeAmountTo(sTree, 4, TOKENS_60);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, TOKENS_60);
-      await checkNodeAmountTo(sTree, 7, TOKENS_60);
-
-      await sTree.nodeWithdraw(6);
-      await sTree.removeLimit(TOKENS_50, 6);
-      /*
-      +--------------------------------------------+
-      |                    1 (70$)                 |
-      +------------------------+-------------------+
-      |         2 (10$)        |      3 (60$)      |
-      +-------------+----------+---------+---------+
-      |   4 (60$)   |  5 (0$)  |  6 (0$) | 7 (60$) |
-      +-------------+----------+---------+---------+
-      */
-      await checkNodeAmountTo(sTree, 1, tokens(70));
-      await checkNodeAmountTo(sTree, 2, TOKENS_10);
-      await checkNodeAmountTo(sTree, 3, TOKENS_60);
-      await checkNodeAmountTo(sTree, 4, TOKENS_60);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, ZERO);
-      await checkNodeAmountTo(sTree, 7, TOKENS_60);
-    });
-    it("add liquidity 60$ for all leaves on tree, withdraw #5, addLimit(50, 6)", async () => {
-      for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(TOKENS_60);
-      await sTree.nodeWithdraw(5);
-      /*
-      +--------------------------------------------+
-      |                    1 (180$)                |
-      +------------------------+-------------------+
-      |         2 (60$)        |     3 (120$)      |
-      +-------------+----------+---------+---------+
-      |   4 (60$)   |  5 (0$)  | 6 (60$) | 7 (60$) |
-      +-------------+----------+---------+---------+
-      */
-      await checkNodeAmountTo(sTree, 1, tokens(180));
-      await checkNodeAmountTo(sTree, 2, TOKENS_60);
-      await checkNodeAmountTo(sTree, 3, tokens(120));
-      await checkNodeAmountTo(sTree, 4, TOKENS_60);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, TOKENS_60);
-      await checkNodeAmountTo(sTree, 7, TOKENS_60);
-
-      await sTree.nodeWithdraw(6);
-      await sTree.addLimit(TOKENS_50, 6);
-      /*
-      +--------------------------------------------+
-      |                    1 (170$)                |
-      +------------------------+-------------------+
-      |         2 (110$)       |      3 (60$)      |
-      +-------------+----------+---------+---------+
-      |   4 (60$)   |  5 (0$)  |  6 (0$) | 7 (60$) |
-      +-------------+----------+---------+---------+
-      */
-      await checkNodeAmountTo(sTree, 1, tokens(170));
-      await checkNodeAmountTo(sTree, 2, tokens(110));
-      await checkNodeAmountTo(sTree, 3, TOKENS_60);
-      await checkNodeAmountTo(sTree, 4, TOKENS_60);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, ZERO);
-      await checkNodeAmountTo(sTree, 7, TOKENS_60);
-    });
-    it("add liquidity 60$ for all leaves on tree, withdraw #4, #5, addLimit(50, 6)", async () => {
-      for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(TOKENS_60);
-      await sTree.nodeWithdraw(4);
-      await sTree.nodeWithdraw(5);
-      /*
-      +--------------------------------------------+
-      |                    1 (120$)                |
-      +------------------------+-------------------+
-      |          2 (0$)        |     3 (120$)      |
-      +-------------+----------+---------+---------+
-      |    4 (0$)   |  5 (0$)  | 6 (60$) | 7 (60$) |
-      +-------------+----------+---------+---------+
-      */
-      await checkNodeAmountTo(sTree, 1, tokens(120));
-      await checkNodeAmountTo(sTree, 2, ZERO);
-      await checkNodeAmountTo(sTree, 3, tokens(120));
-      await checkNodeAmountTo(sTree, 4, ZERO);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, TOKENS_60);
-      await checkNodeAmountTo(sTree, 7, TOKENS_60);
-
-      await sTree.addLimit(TOKENS_50, 6);
-      /*
-      +--------------------------------------------+
-      |                    1 (170$)                |
-      +------------------------+-------------------+
-      |           2 (0$)       |      3 (170$)     |
-      +-------------+----------+---------+---------+
-      |    4 (0$)   |  5 (0$)  | 6 (110$)| 7 (60$) |
-      +-------------+----------+---------+---------+
-      */
-      await checkNodeAmountTo(sTree, 1, tokens(170));
-      await checkNodeAmountTo(sTree, 2, ZERO);
-      await checkNodeAmountTo(sTree, 3, tokens(170));
-      await checkNodeAmountTo(sTree, 4, ZERO);
-      await checkNodeAmountTo(sTree, 5, ZERO);
-      await checkNodeAmountTo(sTree, 6, tokens(110));
-      await checkNodeAmountTo(sTree, 7, TOKENS_60);
+        await checkNodeAmountTo(sTree, 1, TOKENS_20);
+        await checkNodeAmountTo(sTree, 2, ZERO);
+        await checkNodeAmountTo(sTree, 3, TOKENS_20);
+        await checkNodeAmountTo(sTree, 4, ZERO);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, ZERO);
+        await checkNodeAmountTo(sTree, 7, TOKENS_20);
+      });
     });
   });
-  describe("Example tree (4 leaves) fair distribution Alice, Bob, Clarc", async () => {
-    beforeEach(async () => {
-      sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, false);
-    });
-    it("There are 10000$ of liquidity, Bob added 1000$, remove 2000$ lose of leaves 4, 5, Clarc not affected", async () => {
-      // Alice and Bob added
-      await sTree.nodeAddLiquidity(tokens(5000));
-      await sTree.nodeAddLiquidity(tokens(5000));
-      /*+---------------------------------------------+
-        |                  1 (10000$)                 |
-        +-------------------------+-------------------+
-        |        2 (10000$)       |      3 (0$)       |
-        +-------------+-----------+---------+---------+
-        |  4 (5000$)  | 5 (5000$) |  6 (0$) |  7 (0$) |
-        +-------------+-----------+---------+---------+
-              ^              ^
-        Alice |          Bob |                          */
+  IS_DYNAMIC.forEach((isDynamic) => {
+    describe(`Example tree (4 leaves) fair distribution removing from range with 0 ${isDynamic ? "dynamic" : "static"}`, async () => {
+      beforeEach(async () => {
+        sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, isDynamic);
+      });
+      it("add liquidity 60$ for all leaves on tree, withdraw #5, removeLimit(50, 6)", async () => {
+        for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(TOKENS_60);
+        await sTree.nodeWithdraw(5);
+        /*
+        +--------------------------------------------+
+        |                    1 (180$)                |
+        +------------------------+-------------------+
+        |         2 (60$)        |     3 (120$)      |
+        +-------------+----------+---------+---------+
+        |   4 (60$)   |  5 (0$)  | 6 (60$) | 7 (60$) |
+        +-------------+----------+---------+---------+
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(180));
+        await checkNodeAmountTo(sTree, 2, TOKENS_60);
+        await checkNodeAmountTo(sTree, 3, tokens(120));
+        await checkNodeAmountTo(sTree, 4, TOKENS_60);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, TOKENS_60);
+        await checkNodeAmountTo(sTree, 7, TOKENS_60);
 
-      // Clarc added
-      await sTree.nodeAddLiquidity(tokens(1000));
-      /*+------------------------------------------------+
-        |                  1 (11000$)                    |
-        +-------------------------+----------------------+
-        |        2 (10000$)       |      3 (1000$)       |
-        +-------------+-----------+------------+---------+
-        |  4 (5000$)  | 5 (5000$) |  6 (1000$) |  7 (0$) |
-        +-------------+-----------+------------+---------+
-                                        ^
-                                  Clarc |                 */
+        await sTree.nodeWithdraw(6);
+        await sTree.removeLimit(TOKENS_50, 6);
+        /*
+        +--------------------------------------------+
+        |                    1 (70$)                 |
+        +------------------------+-------------------+
+        |         2 (10$)        |      3 (60$)      |
+        +-------------+----------+---------+---------+
+        |   4 (60$)   |  5 (0$)  |  6 (0$) | 7 (60$) |
+        +-------------+----------+---------+---------+
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(70));
+        await checkNodeAmountTo(sTree, 2, TOKENS_10);
+        await checkNodeAmountTo(sTree, 3, TOKENS_60);
+        await checkNodeAmountTo(sTree, 4, TOKENS_60);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, ZERO);
+        await checkNodeAmountTo(sTree, 7, TOKENS_60);
+      });
+      it("add liquidity 60$ for all leaves on tree, withdraw #5, addLimit(50, 6)", async () => {
+        for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(TOKENS_60);
+        await sTree.nodeWithdraw(5);
+        /*
+        +--------------------------------------------+
+        |                    1 (180$)                |
+        +------------------------+-------------------+
+        |         2 (60$)        |     3 (120$)      |
+        +-------------+----------+---------+---------+
+        |   4 (60$)   |  5 (0$)  | 6 (60$) | 7 (60$) |
+        +-------------+----------+---------+---------+
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(180));
+        await checkNodeAmountTo(sTree, 2, TOKENS_60);
+        await checkNodeAmountTo(sTree, 3, tokens(120));
+        await checkNodeAmountTo(sTree, 4, TOKENS_60);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, TOKENS_60);
+        await checkNodeAmountTo(sTree, 7, TOKENS_60);
 
-      // remove 2000$, afects only leaves 4, 5
-      await sTree.removeLimit(tokens(2000), 5);
+        await sTree.nodeWithdraw(6);
+        await sTree.addLimit(TOKENS_50, 6);
+        /*
+        +--------------------------------------------+
+        |                    1 (170$)                |
+        +------------------------+-------------------+
+        |         2 (110$)       |      3 (60$)      |
+        +-------------+----------+---------+---------+
+        |   4 (60$)   |  5 (0$)  |  6 (0$) | 7 (60$) |
+        +-------------+----------+---------+---------+
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(170));
+        await checkNodeAmountTo(sTree, 2, tokens(110));
+        await checkNodeAmountTo(sTree, 3, TOKENS_60);
+        await checkNodeAmountTo(sTree, 4, TOKENS_60);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, ZERO);
+        await checkNodeAmountTo(sTree, 7, TOKENS_60);
+      });
+      it("add liquidity 60$ for all leaves on tree, withdraw #4, #5, addLimit(50, 6)", async () => {
+        for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(TOKENS_60);
+        await sTree.nodeWithdraw(4);
+        await sTree.nodeWithdraw(5);
+        /*
+        +--------------------------------------------+
+        |                    1 (120$)                |
+        +------------------------+-------------------+
+        |          2 (0$)        |     3 (120$)      |
+        +-------------+----------+---------+---------+
+        |    4 (0$)   |  5 (0$)  | 6 (60$) | 7 (60$) |
+        +-------------+----------+---------+---------+
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(120));
+        await checkNodeAmountTo(sTree, 2, ZERO);
+        await checkNodeAmountTo(sTree, 3, tokens(120));
+        await checkNodeAmountTo(sTree, 4, ZERO);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, TOKENS_60);
+        await checkNodeAmountTo(sTree, 7, TOKENS_60);
 
-      /*+------------------------------------------------+
-        |                   1 (9000$)                    |
-        +-------------------------+----------------------+
-        |         2 (8000$)       |      3 (1000$)       |
-        +-------------+-----------+------------+---------+
-        |  4 (5000$)  | 5 (4000$) |  6 (1000$) |  7 (0$) |
-        +-------------+-----------+------------+---------+*/
-      checkNodeAmountTo(sTree, 1, tokens(9000));
-      checkNodeAmountTo(sTree, 2, tokens(8000));
-      checkNodeAmountTo(sTree, 3, tokens(1000));
-      checkNodeAmountTo(sTree, 4, tokens(5000)); // not affected because of lazy update
-      checkNodeAmountTo(sTree, 5, tokens(5000)); // not affected because of lazy update
-      checkNodeAmountTo(sTree, 6, tokens(1000));
-      checkNodeAmountTo(sTree, 7, tokens(0));
-
-      expect(await sTree.nodeWithdrawView(4)).to.be.equal(tokens(4000));
-      expect(await sTree.nodeWithdrawView(5)).to.be.equal(tokens(4000));
-      expect(await sTree.nodeWithdrawView(6)).to.be.equal(tokens(1000));
-
-      expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(4))).to.be.equal(tokens(4000));
-      expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(5))).to.be.equal(tokens(4000));
-      expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(6))).to.be.equal(tokens(1000));
-    });
-    it("There are 15000$ of liquidity, Bob added 1000$, remove 3000$ lose of leaves 4, 5, 6. Clarc affected", async () => {
-      // Alice, Bob and Clarc added
-      await sTree.nodeAddLiquidity(tokens(5000));
-      await sTree.nodeAddLiquidity(tokens(5000));
-      await sTree.nodeAddLiquidity(tokens(5000));
-      /*+------------------------------------------------+
-        |                  1 (15000$)                    |
-        +-------------------------+----------------------+
-        |        2 (10000$)       |      3 (5000$)       |
-        +-------------+-----------+------------+---------+
-        |  4 (5000$)  | 5 (5000$) |  6 (5000$) |  7 (0$) |
-        +-------------+-----------+------------+---------+
-              ^             ^            ^
-        Alice |         Bob |      Clarc |                */
-
-      // condition resolves with 3000$ lose of LP (afects only leaves 4, 5, 6)
-      await sTree.removeLimit(tokens(3000), 6);
-
-      /*+------------------------------------------------+
-        |                  1 (12000$)                    |
-        +-------------------------+----------------------+
-        |        2 (10000$)       |      3 (4000$)       |
-        +-------------+-----------+------------+---------+
-        |  4 (5000$)  | 5 (5000$) |  6 (4000$) |  7 (0$) |
-        +-------------+-----------+------------+---------+*/
-      checkNodeAmountTo(sTree, 1, tokens(12000));
-      checkNodeAmountTo(sTree, 2, tokens(10000));
-      checkNodeAmountTo(sTree, 3, tokens(4000));
-      checkNodeAmountTo(sTree, 4, tokens(5000)); // not affected because of lazy update
-      checkNodeAmountTo(sTree, 5, tokens(5000)); // not affected because of lazy update
-      checkNodeAmountTo(sTree, 6, tokens(4000));
-      checkNodeAmountTo(sTree, 7, tokens(0));
-
-      expect(await sTree.nodeWithdrawView(4)).to.be.equal(tokens(4000));
-      expect(await sTree.nodeWithdrawView(5)).to.be.equal(tokens(4000));
-      expect(await sTree.nodeWithdrawView(6)).to.be.equal(tokens(4000));
-
-      expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(4))).to.be.equal(tokens(4000));
-      expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(5))).to.be.equal(tokens(4000));
-      expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(6))).to.be.equal(tokens(4000));
-    });
-    it("Try add 0 liquidity", async () => {
-      await expect(sTree.nodeAddLiquidity(0)).to.be.revertedWithCustomError(sTree, "IncorrectAmount");
-    });
-    it("Try add liquidity to already filled leaves range", async () => {
-      // fill up keaves range
-      for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(tokens(1));
-      await expect(sTree.nodeAddLiquidity(tokens(1))).to.be.revertedWithCustomError(sTree, "LeafNumberRangeExceeded");
-    });
-    it("Try remove more liquidity than exists", async () => {
-      await sTree.nodeAddLiquidity(TOKENS_10);
-      await expect(sTree.removeLimit(TOKENS_100, 4)).to.be.revertedWithCustomError(sTree, "InsufficientTopNodeAmount");
+        await sTree.addLimit(TOKENS_50, 6);
+        /*
+        +--------------------------------------------+
+        |                    1 (170$)                |
+        +------------------------+-------------------+
+        |           2 (0$)       |      3 (170$)     |
+        +-------------+----------+---------+---------+
+        |    4 (0$)   |  5 (0$)  | 6 (110$)| 7 (60$) |
+        +-------------+----------+---------+---------+
+        */
+        await checkNodeAmountTo(sTree, 1, tokens(170));
+        await checkNodeAmountTo(sTree, 2, ZERO);
+        await checkNodeAmountTo(sTree, 3, tokens(170));
+        await checkNodeAmountTo(sTree, 4, ZERO);
+        await checkNodeAmountTo(sTree, 5, ZERO);
+        await checkNodeAmountTo(sTree, 6, tokens(110));
+        await checkNodeAmountTo(sTree, 7, TOKENS_60);
+      });
     });
   });
-  describe("Example tree (2 leaves) fair distribution", async () => {
-    before(async () => {
-      sTree = await prepareTree(ethers, TINY_TREE_LEAFS, false);
-    });
-    it("add liquidity 10$ in each of 2 leafs", async () => {
-      await sTree.nodeAddLiquidity(TOKENS_10);
-      await sTree.nodeAddLiquidity(TOKENS_10);
+  IS_DYNAMIC.forEach((isDynamic) => {
+    describe(`Example tree (4 leaves) fair distribution Alice, Bob, Clarc ${isDynamic ? "dynamic" : "static"}`, async () => {
+      beforeEach(async () => {
+        sTree = await prepareTree(ethers, EXAMPLE_TREE_LEAFS, isDynamic);
+      });
+      it("There are 10000$ of liquidity, Bob added 1000$, remove 2000$ lose of leaves 4, 5, Clarc not affected", async () => {
+        // Alice and Bob added
+        await sTree.nodeAddLiquidity(tokens(5000));
+        await sTree.nodeAddLiquidity(tokens(5000));
+        /*+---------------------------------------------+
+          |                  1 (10000$)                 |
+          +-------------------------+-------------------+
+          |        2 (10000$)       |      3 (0$)       |
+          +-------------+-----------+---------+---------+
+          |  4 (5000$)  | 5 (5000$) |  6 (0$) |  7 (0$) |
+          +-------------+-----------+---------+---------+
+                ^              ^
+          Alice |          Bob |                          */
 
-      await checkNodeAmountTo(sTree, 1, TOKENS_20);
-      await checkNodeAmountTo(sTree, 2, TOKENS_10);
-      await checkNodeAmountTo(sTree, 3, TOKENS_10);
-      /*      
-      +------------------------+
-      |         1 (20$)        |
-      +-------------+----------+
-      |   2 (10$)   |  3 (10$) |
-      +-------------+----------+
-      */
-    });
-    it("add 20$ to the whole tree", async () => {
-      await sTree.add(TOKENS_20);
+        // Clarc added
+        await sTree.nodeAddLiquidity(tokens(1000));
+        /*+------------------------------------------------+
+          |                  1 (11000$)                    |
+          +-------------------------+----------------------+
+          |        2 (10000$)       |      3 (1000$)       |
+          +-------------+-----------+------------+---------+
+          |  4 (5000$)  | 5 (5000$) |  6 (1000$) |  7 (0$) |
+          +-------------+-----------+------------+---------+
+                                          ^
+                                    Clarc |                 */
 
-      await checkNodeAmountTo(sTree, 1, TOKENS_40);
-      await checkNodeAmountTo(sTree, 2, TOKENS_10);
-      await checkNodeAmountTo(sTree, 3, TOKENS_10);
-      /*      
-      +------------------------+
-      |         1 (40$)        |
-      +-------------+----------+
-      |   2 (10$)   |  3 (10$) |
-      +-------------+----------+
-      */
-    });
-    it("add 10$ to the leaf #2", async () => {
-      await sTree.addLimit(TOKENS_10, 2);
+        // remove 2000$, afects only leaves 4, 5
+        await sTree.removeLimit(tokens(2000), 5);
 
-      await checkNodeAmountTo(sTree, 1, TOKENS_50);
-      await checkNodeAmountTo(sTree, 2, TOKENS_30);
-      await checkNodeAmountTo(sTree, 3, TOKENS_20);
-      /*      
-      +------------------------+
-      |         1 (50$)        |
-      +-------------+----------+
-      |   2 (30$)   |  3 (20$) |
-      +-------------+----------+
-      */
+        /*+------------------------------------------------+
+          |                   1 (9000$)                    |
+          +-------------------------+----------------------+
+          |         2 (8000$)       |      3 (1000$)       |
+          +-------------+-----------+------------+---------+
+          |  4 (5000$)  | 5 (4000$) |  6 (1000$) |  7 (0$) |
+          +-------------+-----------+------------+---------+*/
+        checkNodeAmountTo(sTree, 1, tokens(9000));
+        checkNodeAmountTo(sTree, 2, tokens(8000));
+        checkNodeAmountTo(sTree, 3, tokens(1000));
+        checkNodeAmountTo(sTree, 4, tokens(5000)); // not affected because of lazy update
+        checkNodeAmountTo(sTree, 5, tokens(5000)); // not affected because of lazy update
+        checkNodeAmountTo(sTree, 6, tokens(1000));
+        checkNodeAmountTo(sTree, 7, tokens(0));
+
+        expect(await sTree.nodeWithdrawView(4)).to.be.equal(tokens(4000));
+        expect(await sTree.nodeWithdrawView(5)).to.be.equal(tokens(4000));
+        expect(await sTree.nodeWithdrawView(6)).to.be.equal(tokens(1000));
+
+        expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(4))).to.be.equal(tokens(4000));
+        expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(5))).to.be.equal(tokens(4000));
+        expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(6))).to.be.equal(tokens(1000));
+      });
+      it("There are 15000$ of liquidity, Bob added 1000$, remove 3000$ lose of leaves 4, 5, 6. Clarc affected", async () => {
+        // Alice, Bob and Clarc added
+        await sTree.nodeAddLiquidity(tokens(5000));
+        await sTree.nodeAddLiquidity(tokens(5000));
+        await sTree.nodeAddLiquidity(tokens(5000));
+        /*+------------------------------------------------+
+          |                  1 (15000$)                    |
+          +-------------------------+----------------------+
+          |        2 (10000$)       |      3 (5000$)       |
+          +-------------+-----------+------------+---------+
+          |  4 (5000$)  | 5 (5000$) |  6 (5000$) |  7 (0$) |
+          +-------------+-----------+------------+---------+
+                ^             ^            ^
+          Alice |         Bob |      Clarc |                */
+
+        // condition resolves with 3000$ lose of LP (afects only leaves 4, 5, 6)
+        await sTree.removeLimit(tokens(3000), 6);
+
+        /*+------------------------------------------------+
+          |                  1 (12000$)                    |
+          +-------------------------+----------------------+
+          |        2 (10000$)       |      3 (4000$)       |
+          +-------------+-----------+------------+---------+
+          |  4 (5000$)  | 5 (5000$) |  6 (4000$) |  7 (0$) |
+          +-------------+-----------+------------+---------+*/
+        checkNodeAmountTo(sTree, 1, tokens(12000));
+        checkNodeAmountTo(sTree, 2, tokens(10000));
+        checkNodeAmountTo(sTree, 3, tokens(4000));
+        checkNodeAmountTo(sTree, 4, tokens(5000)); // not affected because of lazy update
+        checkNodeAmountTo(sTree, 5, tokens(5000)); // not affected because of lazy update
+        checkNodeAmountTo(sTree, 6, tokens(4000));
+        checkNodeAmountTo(sTree, 7, tokens(0));
+
+        expect(await sTree.nodeWithdrawView(4)).to.be.equal(tokens(4000));
+        expect(await sTree.nodeWithdrawView(5)).to.be.equal(tokens(4000));
+        expect(await sTree.nodeWithdrawView(6)).to.be.equal(tokens(4000));
+
+        expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(4))).to.be.equal(tokens(4000));
+        expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(5))).to.be.equal(tokens(4000));
+        expect(await getWithdrawnAmount(sTree, await sTree.nodeWithdraw(6))).to.be.equal(tokens(4000));
+      });
+      it("Try add 0 liquidity", async () => {
+        await expect(sTree.nodeAddLiquidity(0)).to.be.revertedWithCustomError(sTree, "IncorrectAmount");
+      });
+      it("Try add liquidity to already filled leaves range", async () => {
+        // fill up keaves range
+        for (const i of Array(4).keys()) await sTree.nodeAddLiquidity(tokens(1));
+        await expect(sTree.nodeAddLiquidity(tokens(1))).to.be.revertedWithCustomError(sTree, "LeafNumberRangeExceeded");
+      });
+      it("Try remove more liquidity than exists", async () => {
+        await sTree.nodeAddLiquidity(TOKENS_10);
+        await expect(sTree.removeLimit(TOKENS_100, 4)).to.be.revertedWithCustomError(
+          sTree,
+          "InsufficientTopNodeAmount",
+        );
+      });
+    });
+  });
+  IS_DYNAMIC.forEach((isDynamic) => {
+    describe(`Example tree (2 leaves) fair distribution ${isDynamic ? "dynamic" : "static"}`, async () => {
+      before(async () => {
+        sTree = await prepareTree(ethers, TINY_TREE_LEAFS, isDynamic);
+      });
+      it("add liquidity 10$ in each of 2 leafs", async () => {
+        await sTree.nodeAddLiquidity(TOKENS_10);
+        await sTree.nodeAddLiquidity(TOKENS_10);
+
+        await checkNodeAmountTo(sTree, 1, TOKENS_20);
+        await checkNodeAmountTo(sTree, 2, TOKENS_10);
+        await checkNodeAmountTo(sTree, 3, TOKENS_10);
+        /*      
+        +------------------------+
+        |         1 (20$)        |
+        +-------------+----------+
+        |   2 (10$)   |  3 (10$) |
+        +-------------+----------+
+        */
+      });
+      it("add 20$ to the whole tree", async () => {
+        await sTree.add(TOKENS_20);
+
+        await checkNodeAmountTo(sTree, 1, TOKENS_40);
+        await checkNodeAmountTo(sTree, 2, TOKENS_10);
+        await checkNodeAmountTo(sTree, 3, TOKENS_10);
+        /*      
+        +------------------------+
+        |         1 (40$)        |
+        +-------------+----------+
+        |   2 (10$)   |  3 (10$) |
+        +-------------+----------+
+        */
+      });
+      it("add 10$ to the leaf #2", async () => {
+        await sTree.addLimit(TOKENS_10, 2);
+
+        await checkNodeAmountTo(sTree, 1, TOKENS_50);
+        await checkNodeAmountTo(sTree, 2, TOKENS_30);
+        await checkNodeAmountTo(sTree, 3, TOKENS_20);
+        /*      
+        +------------------------+
+        |         1 (50$)        |
+        +-------------+----------+
+        |   2 (30$)   |  3 (20$) |
+        +-------------+----------+
+        */
+      });
     });
   });
   describe("Example tree (8 leaves) fair distribution", async () => {
