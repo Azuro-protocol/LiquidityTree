@@ -36,9 +36,9 @@ const getNodeAmount = async (sTree, node) => {
   return (await sTree.treeNode(node)).amount;
 };
 
-const prepareTree = async (ethers, leafs) => {
+const prepareTree = async (ethers, leafs, isDynamicSized) => {
   const LIQUIDITYTREE = await ethers.getContractFactory("LiquidityProtocol");
-  let tree = await LIQUIDITYTREE.deploy(leafs);
+  let tree = await LIQUIDITYTREE.deploy(leafs, isDynamicSized);
   await tree.waitForDeployment();
   return tree;
 };
